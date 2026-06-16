@@ -1,0 +1,20 @@
+app_id: nimi.storybook
+display_name: Storybook
+profile: workspace-app
+npm_package_name: nimiapp-storybook
+cargo_package_name: nimiapp-storybook-shell
+tauri_identifier: nimi.storybook
+package_author: Nimi Team
+submission_role: developer-submitted-input
+publish_readiness:
+  install_command: pnpm install
+  dev_shell_command: pnpm dev:shell
+  build_command: pnpm run build
+  pack_command: pnpm run pack
+review_inputs:
+  manifest: nimi.app.yaml
+  build_profile: .nimi/config/build-profile.yaml
+  scaffold_boundary: .nimi/contracts/scaffold-boundary.yaml
+  product_authority: .nimi/spec/storybook/kernel
+  local_audit: pnpm run local-audit
+admission_truth: platform-owned-after-review

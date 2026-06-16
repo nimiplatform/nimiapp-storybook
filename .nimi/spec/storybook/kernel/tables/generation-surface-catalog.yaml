@@ -1,0 +1,25 @@
+table_family: product_catalog
+owner: storybook
+catalog_id: storybook_generation_surface_catalog
+description: Runtime AI generation surfaces owned by Storybook.
+entries:
+  - id: nimi.storybook.studio.bible
+    name: Studio Bible Draft
+    semantics: Draft Storybook Bible text for creator review from a premise and optional style hint.
+    owner: storybook
+    authority_refs: [SBK-AI-07]
+  - id: nimi.storybook.play.scene
+    name: Play Scene Text
+    semantics: Generate scene prose from governed narrative context without adding conflicting hard truth.
+    owner: storybook
+    authority_refs: [SBK-AI-07, SBK-DATA-05]
+  - id: nimi.storybook.play.choices
+    name: Play Choice Suggestions
+    semantics: Generate short default choices for choice-first play progression.
+    owner: storybook
+    authority_refs: [SBK-AI-07, SBK-IA-04]
+  - id: nimi.storybook.studio.asset
+    name: Studio Asset Image
+    semantics: Generate an image artifact for a governed Storybook asset spec.
+    owner: storybook
+    authority_refs: [SBK-AI-07]

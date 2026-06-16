@@ -1,0 +1,30 @@
+table_family: product_catalog
+owner: storybook
+catalog_id: storybook_rule_catalog
+description: Stable Storybook kernel rule families.
+entries:
+  - id: SBK-PROD
+    name: Product contract
+    semantics: Product boundaries, truth ownership, lifecycle, external reference posture.
+    owner: storybook
+    authority_refs: [storybook/kernel/product-contract.md]
+  - id: SBK-DATA
+    name: Data model contract
+    semantics: Truth-package record shape, refs, evidence, projection, run provenance.
+    owner: storybook
+    authority_refs: [storybook/kernel/data-model-contract.md]
+  - id: SBK-AI
+    name: Runtime AI contract
+    semantics: Runtime auth, SDK and Kit AI Config, dispatch and fail-closed generation.
+    owner: storybook
+    authority_refs: [storybook/kernel/runtime-ai-contract.md]
+  - id: SBK-IA
+    name: IA contract
+    semantics: Studio, Play, and settings responsibility split.
+    owner: storybook
+    authority_refs: [storybook/kernel/ia-contract.md]
+  - id: SBK-REMOVED
+    name: Removed surfaces contract
+    semantics: Hard removals that fail closed if reintroduced.
+    owner: storybook
+    authority_refs: [storybook/kernel/removed-surfaces-contract.md]

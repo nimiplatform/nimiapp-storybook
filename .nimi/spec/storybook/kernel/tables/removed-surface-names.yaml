@@ -1,0 +1,21 @@
+table_family: closed_enum
+owner: storybook
+enum_id: storybook_removed_surface_names
+description: Removed Storybook surfaces and semantics.
+values:
+  - value: prompt-only-generator
+    label: Prompt-only generator
+    semantics: Ungoverned prompt-to-story output without truth package authority.
+    authority_refs: [SBK-REMOVED-01]
+  - value: app-owned-provider-console
+    label: App-owned provider console
+    semantics: Storybook-local provider or model selection UI outside SDK/Kit AI Config.
+    authority_refs: [SBK-REMOVED-02]
+  - value: shared-memory-writer
+    label: Shared memory writer
+    semantics: Storybook project data mutating Runtime, Realm, or shared ecosystem memory.
+    authority_refs: [SBK-REMOVED-03]
+  - value: external-engine-runtime-dependency
+    label: External engine runtime dependency
+    semantics: Forge, Realm, or another narrative engine owning Storybook runtime truth.
+    authority_refs: [SBK-REMOVED-04]

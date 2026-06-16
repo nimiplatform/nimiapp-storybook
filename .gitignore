@@ -1,0 +1,28 @@
+node_modules/
+dist/
+artifacts/
+.codex-artifacts/
+.DS_Store
+*.log
+
+# Tauri
+src-tauri/target/
+src-tauri/gen/schemas/
+
+# Vite
+.vite/
+.turbo/
+.tmp/
+.tmp-*.txt
+
+# Env
+.env
+.env.local
+.env.*.local
+
+.claude/
+
+# nimicoding-managed local + cache + topic surfaces
+.nimi/local/
+.nimi/cache/
+.nimi/topics/

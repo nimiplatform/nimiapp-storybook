@@ -1,0 +1,58 @@
+{
+  "lockVersion": 1,
+  "scaffoldVersion": "2026-06-16.storybook-standalone-authority",
+  "profile": "workspace-app",
+  "appId": "nimi.storybook",
+  "appTitle": "Storybook",
+  "packageName": "nimiapp-storybook",
+  "packageAuthor": "Nimi Team",
+  "cargoPackageName": "nimiapp-storybook-shell",
+  "tauriIdentifier": "nimi.storybook",
+  "appIdentity": {
+    "appId": "nimi.storybook",
+    "appTitle": "Storybook",
+    "npmPackageName": "nimiapp-storybook",
+    "packageAuthor": "Nimi Team",
+    "cargoPackageName": "nimiapp-storybook-shell",
+    "tauriIdentifier": "nimi.storybook",
+    "identityRole": "scaffold-generated-authoring-input"
+  },
+  "managedFileTaxonomy": {
+    "nimicodingPackageProjection": [
+      ".nimi/config/**",
+      ".nimi/contracts/**",
+      ".nimi/methodology/**"
+    ],
+    "hostOwnedProductAuthority": [
+      ".nimi/spec/storybook/kernel/**"
+    ],
+    "hostOwnedThinGuidance": [
+      ".nimi/spec/INDEX.md",
+      ".nimi/spec/storybook/*.md"
+    ],
+    "scaffoldManagedGlue": [
+      ".gitignore",
+      "ADMISSION.md",
+      "AGENTS.md",
+      "CHANGELOG.md",
+      "CLAUDE.md",
+      "README.md",
+      "RELEASE.md",
+      "scripts/local-audit.mjs",
+      "scripts/pack.mjs",
+      "scripts/validate.mjs"
+    ],
+    "appOwnedProductCode": [
+      "src/storybook/**",
+      "src/shell/**",
+      "test/**"
+    ]
+  },
+  "semantics": {
+    "publicAdmissionTruth": "platform-owned-after-review",
+    "permissionGrantTruth": "platform-owned-after-review",
+    "tokenCustody": "runtime-owned",
+    "aiConfigOwner": "sdk-nimi-ai-config",
+    "productAuthorityRoot": ".nimi/spec/storybook/kernel"
+  }
+}

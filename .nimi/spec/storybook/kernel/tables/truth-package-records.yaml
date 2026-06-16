@@ -1,0 +1,35 @@
+table_family: product_record_schema
+owner: storybook
+record_id: storybook_truth_package
+path: src/storybook/engine/truth.ts
+schema_version: 1
+description: Canonical Storybook project authority record.
+required_top_level_fields:
+  - id
+  - projectId
+  - version
+  - governance
+  - rules
+  - scenarioFrame
+  - agentCast
+  - bible
+  - adaptationBrief
+  - visualStyleGuide
+  - divergences
+  - branchTopology
+  - stateEndingMatrix
+  - chapters
+  - assets
+  - evidence
+  - derivations
+  - projectionInputs
+  - feedback
+  - compat
+  - realmImports
+invariants:
+  - invariant: Truth refs referenced by evidence, derivations, and projections resolve to known records.
+    authority_refs: [SBK-DATA-02, SBK-DATA-03, SBK-DATA-04]
+  - invariant: Governance lifecycle is draft, foundation-approved, or play-ready.
+    authority_refs: [SBK-PROD-04]
+  - invariant: Provider and model identifiers are generation provenance only.
+    authority_refs: [SBK-DATA-08, SBK-AI-05]
