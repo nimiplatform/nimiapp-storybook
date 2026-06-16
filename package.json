@@ -1,0 +1,58 @@
+{
+  "name": "nimiapp-storybook",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.32.1",
+  "engines": {
+    "node": ">=24.0.0",
+    "pnpm": ">=10.0.0"
+  },
+  "scripts": {
+    "dev": "pnpm run dev:renderer",
+    "dev:renderer": "vite --host 127.0.0.1 --port 1472 --strictPort",
+    "dev:shell": "tauri dev",
+    "tauri": "tauri",
+    "build:renderer": "vite build",
+    "typecheck": "tsc --noEmit",
+    "build": "pnpm run typecheck && pnpm run build:renderer && (cd src-tauri && cargo check)",
+    "build:shell": "tauri build",
+    "lint": "pnpm run typecheck && eslint . --max-warnings 0 && (cd src-tauri && cargo check)",
+    "test": "node --test test/*.test.mjs",
+    "check": "pnpm run typecheck && pnpm run test && pnpm run lint",
+    "validate": "node scripts/validate.mjs",
+    "local-audit": "node scripts/local-audit.mjs",
+    "pack": "pnpm run build && node scripts/pack.mjs",
+    "nimicoding": "nimicoding",
+    "nimicoding:doctor": "nimicoding doctor"
+  },
+  "dependencies": {
+    "@nimiplatform/kit": "link:../../nimi/kit",
+    "@nimiplatform/sdk": "link:../../nimi/sdks/typescript",
+    "@tauri-apps/api": "^2.9.1",
+    "i18next": "^25.10.10",
+    "lucide-react": "^0.577.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-i18next": "^16.6.6",
+    "zustand": "^5.0.13"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@nimiplatform/nimi-coding": "^0.2.7",
+    "@tailwindcss/vite": "^4.3.0",
+    "@tauri-apps/cli": "^2.11.2",
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.1",
+    "eslint": "^10.4.0",
+    "globals": "^17.6.0",
+    "tailwindcss": "^4.3.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.59.4",
+    "vite": "^7.2.4"
+  },
+  "author": "Nimi Team",
+  "license": "Apache-2.0"
+}
