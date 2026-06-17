@@ -66,14 +66,14 @@ test('structured intake conversion normalizes inputs and fails closed', async ()
   }, NOW);
   assert.equal(original.ok, true);
   assert.ok(original.value.scenarioFrame, 'scenario frame produced');
-  assert.ok(original.value.agentCast && original.value.agentCast.agents.length === 1, 'cast produced');
+  assert.ok(original.value.sourceCast && original.value.sourceCast.sources.length === 1, 'cast produced');
   assert.equal(original.value.bible.approved, false, 'bible starts unapproved (review gate)');
   assert.ok(original.value.evidenceSeeds.length > 0, 'evidence seeds produced');
 
-  // character card requires a name + a descriptive field
-  const badCard = engine.convertIntake({ kind: 'character-card', projectId: 'p1', card: { name: '' } }, NOW);
+  // persona seed requires a name + a descriptive field
+  const badCard = engine.convertIntake({ kind: 'persona-seed', projectId: 'p1', card: { name: '' } }, NOW);
   assert.equal(badCard.ok, false);
-  assert.equal(badCard.code, 'character_card_invalid');
+  assert.equal(badCard.code, 'persona_seed_invalid');
 
   // oversize source rejects long-novel extraction
   const huge = 'x'.repeat(engine.MAX_SOURCE_CHARS + 1);
@@ -273,8 +273,8 @@ test('rule-of-truth -> projection: example truth package is play-valid end to en
   const play = engine.buildPlayProjection(pkg);
   // redaction: no private fact leaks into the public cast
   const publicFacts = play.payload.publicCast.flatMap((c) => c.publicFacts.map((f) => f.toLowerCase()));
-  for (const agent of pkg.agentCast.agents) {
-    for (const priv of agent.privateFacts) {
+  for (const source of pkg.sourceCast.sources) {
+    for (const priv of source.privateFacts) {
       assert.ok(!publicFacts.includes(priv.toLowerCase()), 'private fact must not appear in the play projection');
     }
   }

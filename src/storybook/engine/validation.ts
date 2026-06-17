@@ -9,7 +9,7 @@ import { type StorybookTruthPackage, validateTruthPackage } from './truth.js';
 import { validateProjectionFreshness } from './projection.js';
 import { validatePreparedPackage } from './prepared-package.js';
 import {
-  type RealmWorldAgentImport,
+  type RealmSourceImport,
   type RealmPromotionRequest,
   validateRealmImport,
   validateRealmPromotionRequest,
@@ -22,20 +22,20 @@ import {
  */
 export const FAILURE_TAXONOMY = [
   // intake / lite rule builder
-  'source_too_large_for_app_lite_builder', 'scenario_seed_invalid', 'character_card_invalid', 'source_corpus_invalid',
+  'source_too_large_for_app_lite_builder', 'scenario_seed_invalid', 'persona_seed_invalid', 'source_corpus_invalid',
   'structured_notes_invalid', 'document_text_invalid', 'manual_setting_invalid', 'intake_kind_unsupported', 'long_novel_extraction_unsupported',
   // truth package / authority
   'truth_package_section_incomplete', 'truth_ref_unresolved', 'evidence_binding_unresolved',
   'projection_missing_governing_truth_ref', 'projection_introduces_unbacked_rule', 'projection_stale',
   // foundation
-  'scenario_frame_incomplete', 'agent_cast_visibility_invalid', 'branch_topology_invalid', 'state_ending_matrix_invalid', 'asset_spec_incomplete',
+  'scenario_frame_incomplete', 'source_cast_visibility_invalid', 'branch_topology_invalid', 'state_ending_matrix_invalid', 'asset_spec_incomplete',
   // adaptation
   'adaptation_brief_invalid', 'adaptation_unconfirmed', 'adaptation_spoiler_leak', 'divergence_decision_invalid', 'visual_style_guide_invalid', 'bible_validation_failed',
   // run / narrative engine
   'chapter_graph_unreachable', 'chapter_dead_end', 'ending_unreachable', 'ending_closure_missing',
   'choices_missing_for_default_progression', 'free_text_not_required_violation', 'narrative_core_output_invalid',
   'narrative_context_insufficient', 'narrative_guard_rejected', 'narrative_guard_adjusted', 'narrative_spine_write_conflict',
-  'agent_turn_failed', 'run_transcript_inconsistent',
+  'source_turn_failed', 'run_transcript_inconsistent',
   // playable run / branch
   'branch_switch_invalid', 'run_state_conflict', 'node_ref_missing', 'route_condition_invalid', 'checkpoint_invalid',
   // assets
@@ -44,7 +44,7 @@ export const FAILURE_TAXONOMY = [
   'ai_generation_failed', 'asset_generation_failed', 'artifact_missing', 'generation_batch_invalid',
   'generation_batch_state_conflict', 'generation_retry_exhausted', 'generation_provenance_missing',
   // realm import / promotion
-  'realm_world_agent_import_invalid', 'realm_imported_ref_stale', 'realm_import_conflict',
+  'realm_source_import_invalid', 'realm_imported_ref_stale', 'realm_import_conflict',
   'realm_promotion_request_invalid', 'realm_run_state_promotion_forbidden',
   // promotion / memory
   'promotion_enum_invalid', 'promotion_auto_accept_forbidden_class', 'promotion_assessment_failed', 'feedback_patch_target_invalid',
@@ -114,7 +114,7 @@ export function buildProvenanceAudit(pkg: StorybookTruthPackage): ProvenanceAudi
   const significant: TruthRef[] = [];
   if (pkg.bible) significant.push(pkg.bible.ref);
   if (pkg.scenarioFrame) significant.push(pkg.scenarioFrame.ref);
-  if (pkg.agentCast) significant.push(pkg.agentCast.ref);
+  if (pkg.sourceCast) significant.push(pkg.sourceCast.ref);
 
   return {
     refsWithEvidence: evidenceRefs.size,
@@ -132,7 +132,7 @@ export type DiagnosticsSection = { name: string; report: ValidationReport };
 export type DiagnosticsInput = {
   pkg?: StorybookTruthPackage;
   preparedPackages?: unknown[];
-  realmImports?: RealmWorldAgentImport[];
+  realmImports?: RealmSourceImport[];
   realmPromotions?: RealmPromotionRequest[];
   generationRuns?: GenerationRunObservation[];
   knownRealmRelease?: string;

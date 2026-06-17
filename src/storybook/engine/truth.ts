@@ -9,12 +9,12 @@ import { type TruthRef, type TruthFamily, isTruthRef, mintId } from './ids.js';
 import { type ValidationFinding, type ValidationReport, validationReport } from './failure.js';
 import {
   type ScenarioFrame,
-  type AgentCast,
+  type SourceCast,
   type StorybookBible,
   type BranchTopology,
   type StateEndingMatrix,
   validateScenarioFrame,
-  validateAgentCast,
+  validateSourceCast,
   validateBranchTopology,
   validateStateEndingMatrix,
 } from './foundation.js';
@@ -30,9 +30,9 @@ import {
   validateDivergenceDecision,
   validateVisualStyleGuide,
 } from './adaptation.js';
-import { type RealmWorldAgentImport, validateRealmImport } from './realm.js';
+import { type RealmSourceImport, validateRealmImport } from './realm.js';
 
-export type StorybookProjectMode = 'source-backed' | 'document-backed' | 'character-card' | 'original-scenario' | 'manual-setting' | 'structured-notes';
+export type StorybookProjectMode = 'source-backed' | 'document-backed' | 'persona-seed' | 'original-scenario' | 'manual-setting' | 'structured-notes';
 
 export type StorybookProject = {
   id: string;
@@ -121,7 +121,7 @@ export type StorybookTruthPackage = {
   // truth section
   rules: TruthRule[];
   scenarioFrame: ScenarioFrame | null;
-  agentCast: AgentCast | null;
+  sourceCast: SourceCast | null;
   bible: StorybookBible | null;
   adaptationBrief: AdaptationBrief | null;
   visualStyleGuide: VisualStyleGuide | null;
@@ -137,7 +137,7 @@ export type StorybookTruthPackage = {
   feedback: AcceptedFeedbackRecord[];
   compat: CompatEntry[];
   /** Realm structural references / forks owned by this project (wave-6). */
-  realmImports: RealmWorldAgentImport[];
+  realmImports: RealmSourceImport[];
 };
 
 export function createEmptyTruthPackage(input: { projectId: string; owner: string; now: string }): StorybookTruthPackage {
@@ -155,7 +155,7 @@ export function createEmptyTruthPackage(input: { projectId: string; owner: strin
     },
     rules: [],
     scenarioFrame: null,
-    agentCast: null,
+    sourceCast: null,
     bible: null,
     adaptationBrief: null,
     visualStyleGuide: null,
@@ -174,7 +174,7 @@ export function createEmptyTruthPackage(input: { projectId: string; owner: strin
 }
 
 /** Add a Realm import/fork to the project's authority bundle (app-owned). */
-export function addRealmImport(pkg: StorybookTruthPackage, record: RealmWorldAgentImport, now: string): StorybookTruthPackage {
+export function addRealmImport(pkg: StorybookTruthPackage, record: RealmSourceImport, now: string): StorybookTruthPackage {
   return { ...pkg, realmImports: [...pkg.realmImports, record], governance: { ...pkg.governance, updatedAt: now } };
 }
 
@@ -185,9 +185,9 @@ export function collectKnownTruthRefs(pkg: StorybookTruthPackage): Set<string> {
   for (const chapter of pkg.chapters) refs.add(chapter.ref);
   for (const asset of pkg.assets) refs.add(asset.ref);
   if (pkg.scenarioFrame) refs.add(pkg.scenarioFrame.ref);
-  if (pkg.agentCast) {
-    refs.add(pkg.agentCast.ref);
-    for (const agent of pkg.agentCast.agents) refs.add(agent.ref);
+  if (pkg.sourceCast) {
+    refs.add(pkg.sourceCast.ref);
+    for (const source of pkg.sourceCast.sources) refs.add(source.ref);
   }
   if (pkg.bible) refs.add(pkg.bible.ref);
   if (pkg.adaptationBrief) refs.add(pkg.adaptationBrief.ref);
@@ -259,7 +259,7 @@ export function validateTruthPackage(pkg: StorybookTruthPackage): ValidationRepo
   const needsFoundation = pkg.governance.lifecycle === 'foundation-approved' || pkg.governance.lifecycle === 'play-ready';
   if (needsFoundation) {
     if (!pkg.scenarioFrame) findings.push({ code: 'truth_package_section_incomplete', message: 'Foundation-approved package is missing a scenario frame.', pointers: ['scenarioFrame'] });
-    if (!pkg.agentCast) findings.push({ code: 'truth_package_section_incomplete', message: 'Foundation-approved package is missing an agent cast.', pointers: ['agentCast'] });
+    if (!pkg.sourceCast) findings.push({ code: 'truth_package_section_incomplete', message: 'Foundation-approved package is missing an source cast.', pointers: ['sourceCast'] });
     if (!pkg.bible) {
       findings.push({ code: 'truth_package_section_incomplete', message: 'Foundation-approved package is missing a Storybook Bible.', pointers: ['bible'] });
     } else if (!pkg.bible.approved) {
@@ -281,7 +281,7 @@ export function validateTruthPackage(pkg: StorybookTruthPackage): ValidationRepo
 
   // foundation validators when present
   if (pkg.scenarioFrame) findings.push(...validateScenarioFrame(pkg.scenarioFrame));
-  if (pkg.agentCast) findings.push(...validateAgentCast(pkg.agentCast));
+  if (pkg.sourceCast) findings.push(...validateSourceCast(pkg.sourceCast));
   if (pkg.branchTopology) findings.push(...validateBranchTopology(pkg.branchTopology));
   if (pkg.branchTopology && pkg.stateEndingMatrix) findings.push(...validateStateEndingMatrix(pkg.stateEndingMatrix, pkg.branchTopology));
   for (const asset of pkg.assets) findings.push(...validateAssetSpec(asset));

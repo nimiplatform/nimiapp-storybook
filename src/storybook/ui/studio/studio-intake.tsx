@@ -20,7 +20,7 @@ import { saveProject } from '../../store/storybook-store.js';
 const KIND_OPTIONS: { value: IntakeKind; label: string }[] = [
   { value: 'manual-setting', label: '手动设定' },
   { value: 'original-scenario', label: '原创情景' },
-  { value: 'character-card', label: '角色卡' },
+  { value: 'persona-seed', label: 'Persona Seed' },
   { value: 'short-fiction', label: '短篇小说（精简节选）' },
   { value: 'document-text', label: '文档文本' },
   { value: 'structured-notes', label: '结构化笔记' },
@@ -29,7 +29,7 @@ const KIND_OPTIONS: { value: IntakeKind; label: string }[] = [
 const MODE_BY_KIND: Record<IntakeKind, StorybookProjectMode> = {
   'manual-setting': 'manual-setting',
   'original-scenario': 'original-scenario',
-  'character-card': 'character-card',
+  'persona-seed': 'persona-seed',
   'short-fiction': 'source-backed',
   'document-text': 'document-backed',
   'structured-notes': 'structured-notes',
@@ -64,7 +64,7 @@ export function StudioIntake({ onCreated, onCancel }: { onCreated: (projectId: s
         return { kind, projectId, background: text, roles: parseRoles(secondary), rules: lines(tertiary), playerPosition: '参与者视角', contentBoundaries: [] };
       case 'original-scenario':
         return { kind, projectId, premise: text, cast: parseRoles(secondary).map((r) => ({ name: r.name, summary: r.summary })), rules: lines(tertiary) };
-      case 'character-card':
+      case 'persona-seed':
         return { kind, projectId, card: { name: secondary.trim() || name.trim(), persona: text, voice: tertiary.trim() || undefined } };
       case 'short-fiction':
         return { kind, projectId, title: secondary.trim() || undefined, text };
@@ -117,18 +117,18 @@ export function StudioIntake({ onCreated, onCancel }: { onCreated: (projectId: s
   const textLabel =
     kind === 'manual-setting' ? '背景设定'
       : kind === 'original-scenario' ? '前提 / 情景种子'
-        : kind === 'character-card' ? '人物设定（persona）'
+        : kind === 'persona-seed' ? '人物设定（persona）'
           : kind === 'structured-notes' ? '结构化笔记（每行 “标签: 值”）'
             : '源文本（精简节选，≤ 20000 字符）';
 
   const secondaryLabel =
     kind === 'manual-setting' || kind === 'original-scenario' ? '角色（每行 “名字|简介”）'
-      : kind === 'character-card' ? '角色名'
+      : kind === 'persona-seed' ? '角色名'
         : '标题（可选）';
 
   const tertiaryLabel =
     kind === 'manual-setting' || kind === 'original-scenario' ? '规则（每行一条）'
-      : kind === 'character-card' ? '语气（可选）'
+      : kind === 'persona-seed' ? '语气（可选）'
         : '';
 
   return (

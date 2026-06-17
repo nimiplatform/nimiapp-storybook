@@ -1,7 +1,7 @@
 // App-internal, project-scoped memory. Feedback, corrections, transcripts,
 // preference weights, run state, and promotion records improve FUTURE Storybook
 // generation inside the project/app only. They do NOT mutate model weights,
-// Runtime agent memory, Realm world state, or any shared Nimi ecosystem memory.
+// Runtime source memory, Realm world state, or any shared Nimi ecosystem memory.
 //
 // This module is deliberately self-contained: it has no Runtime/Realm imports and
 // exposes no surface that could write outside the app. That boundary is part of

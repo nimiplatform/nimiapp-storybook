@@ -14,13 +14,13 @@ const PROJECT_ID = 'example-foggy-harbor';
 
 export function buildExampleTruthPackage(now: string): StorybookTruthPackage {
   const sceneRef = makeTruthRef(PROJECT_ID, 'scenario-frame', 'frame');
-  const castRef = makeTruthRef(PROJECT_ID, 'agent-cast', 'cast');
+  const castRef = makeTruthRef(PROJECT_ID, 'source-cast', 'cast');
   const bibleRef = makeTruthRef(PROJECT_ID, 'storybook-bible', 'bible');
   const topoRef = makeTruthRef(PROJECT_ID, 'branch-topology', 'topo');
   const matrixRef = makeTruthRef(PROJECT_ID, 'state-ending-matrix', 'matrix');
   const chapterRef = makeTruthRef(PROJECT_ID, 'chapter', 'ch1');
-  const inspectorRef = makeTruthRef(PROJECT_ID, 'agent-rule', 'inspector');
-  const keeperRef = makeTruthRef(PROJECT_ID, 'agent-rule', 'keeper');
+  const inspectorRef = makeTruthRef(PROJECT_ID, 'source-profile', 'inspector');
+  const keeperRef = makeTruthRef(PROJECT_ID, 'source-profile', 'keeper');
   const bgAssetRef = makeTruthRef(PROJECT_ID, 'asset-spec', 'bg-harbor');
   const portraitAssetRef = makeTruthRef(PROJECT_ID, 'asset-spec', 'portrait-keeper');
   const briefRef = makeTruthRef(PROJECT_ID, 'adaptation-brief', 'brief');
@@ -98,9 +98,9 @@ export function buildExampleTruthPackage(now: string): StorybookTruthPackage {
       playerPosition: '第一人称调查者',
       contentBoundaries: ['适合一般读者', '不含露骨或仇恨内容'],
     },
-    agentCast: {
+    sourceCast: {
       ref: castRef,
-      agents: [
+      sources: [
         {
           id: 'inspector',
           ref: inspectorRef,

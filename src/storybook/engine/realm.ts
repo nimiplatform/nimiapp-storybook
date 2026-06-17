@@ -1,5 +1,5 @@
 // Realm import & promotion boundary (wave-6). Stage-one Realm use is STRUCTURAL
-// REFERENCE and reverse-audit only: Storybook may point at Realm world/agent
+// REFERENCE and reverse-audit only: Storybook may point at Realm world/source
 // definitions by stable ref, or fork them into app-owned adaptation truth, but it
 // never mutates Realm and never treats Realm as live distribution. Three states:
 //
@@ -18,7 +18,7 @@ import { type Result, ok, fail, type ValidationFinding } from './failure.js';
 
 export type RealmObjectKind =
   | 'world-rule'
-  | 'agent-rule'
+  | 'source-profile'
   | 'canonical-truth-package'
   | 'inheritance-link'
   | 'world-release'
@@ -55,7 +55,7 @@ export function isRealmRef(value: unknown): value is RealmRef {
   return typeof value === 'string' && parseRealmRef(value) !== null;
 }
 
-export type RealmWorldAgentImport = {
+export type RealmSourceImport = {
   id: string;
   state: RealmImportState;
   realmRef: RealmRef;
@@ -107,9 +107,9 @@ export function createImportedRef(input: {
   realmObjectKind: RealmObjectKind;
   realmRelease: string;
   copyMode?: RealmCopyMode;
-}): Result<RealmWorldAgentImport> {
-  if (!isRealmRef(input.realmRef)) return fail('realm_world_agent_import_invalid', `"${input.realmRef}" is not a Realm ref.`, ['realmRef']);
-  if (!input.realmRelease.trim()) return fail('realm_world_agent_import_invalid', 'imported_ref requires a source release/version.', ['realmRelease']);
+}): Result<RealmSourceImport> {
+  if (!isRealmRef(input.realmRef)) return fail('realm_source_import_invalid', `"${input.realmRef}" is not a Realm ref.`, ['realmRef']);
+  if (!input.realmRelease.trim()) return fail('realm_source_import_invalid', 'imported_ref requires a source release/version.', ['realmRelease']);
   const parsed = parseRealmRef(input.realmRef)!;
   return ok({
     id: mintId('realmimp'),
@@ -130,11 +130,11 @@ export function createAdaptedFork(input: {
   originTruthRef: TruthRef;
   divergenceReason: string;
   currentPackageVersion: number;
-}): Result<RealmWorldAgentImport> {
-  if (!isRealmRef(input.realmRef)) return fail('realm_world_agent_import_invalid', `"${input.realmRef}" is not a Realm ref.`, ['realmRef']);
-  if (!isTruthRef(input.originTruthRef)) return fail('realm_world_agent_import_invalid', 'adapted_fork requires a Storybook origin truth ref.', ['originTruthRef']);
-  if (!input.divergenceReason.trim()) return fail('realm_world_agent_import_invalid', 'adapted_fork requires a divergence reason.', ['divergenceReason']);
-  if (!input.realmRelease.trim()) return fail('realm_world_agent_import_invalid', 'adapted_fork requires the source release it diverged from.', ['realmRelease']);
+}): Result<RealmSourceImport> {
+  if (!isRealmRef(input.realmRef)) return fail('realm_source_import_invalid', `"${input.realmRef}" is not a Realm ref.`, ['realmRef']);
+  if (!isTruthRef(input.originTruthRef)) return fail('realm_source_import_invalid', 'adapted_fork requires a Storybook origin truth ref.', ['originTruthRef']);
+  if (!input.divergenceReason.trim()) return fail('realm_source_import_invalid', 'adapted_fork requires a divergence reason.', ['divergenceReason']);
+  if (!input.realmRelease.trim()) return fail('realm_source_import_invalid', 'adapted_fork requires the source release it diverged from.', ['realmRelease']);
   const parsed = parseRealmRef(input.realmRef)!;
   return ok({
     id: mintId('realmimp'),
@@ -160,20 +160,20 @@ export function createAdaptedFork(input: {
  * one Realm currently advertises is flagged `realm_imported_ref_stale` (explicit,
  * never silently refreshed).
  */
-export function validateRealmImport(record: RealmWorldAgentImport, knownRealmRelease?: string): ValidationFinding[] {
+export function validateRealmImport(record: RealmSourceImport, knownRealmRelease?: string): ValidationFinding[] {
   const findings: ValidationFinding[] = [];
   if (!isRealmRef(record.realmRef)) {
-    findings.push({ code: 'realm_world_agent_import_invalid', message: `Import ${record.id} has an invalid Realm ref.`, pointers: [`realm-import:${record.id}`] });
+    findings.push({ code: 'realm_source_import_invalid', message: `Import ${record.id} has an invalid Realm ref.`, pointers: [`realm-import:${record.id}`] });
   }
   if (record.state === 'adapted_fork') {
     if (!record.originTruthRef || !isTruthRef(record.originTruthRef)) {
-      findings.push({ code: 'realm_world_agent_import_invalid', message: `adapted_fork ${record.id} must preserve a Storybook origin truth ref.`, pointers: [`realm-import:${record.id}`] });
+      findings.push({ code: 'realm_source_import_invalid', message: `adapted_fork ${record.id} must preserve a Storybook origin truth ref.`, pointers: [`realm-import:${record.id}`] });
     }
     if (!record.divergenceReason?.trim()) {
-      findings.push({ code: 'realm_world_agent_import_invalid', message: `adapted_fork ${record.id} must record a divergence reason.`, pointers: [`realm-import:${record.id}`] });
+      findings.push({ code: 'realm_source_import_invalid', message: `adapted_fork ${record.id} must record a divergence reason.`, pointers: [`realm-import:${record.id}`] });
     }
     if (record.localPrecedence !== true) {
-      findings.push({ code: 'realm_world_agent_import_invalid', message: `adapted_fork ${record.id} must declare local precedence over the source ref.`, pointers: [`realm-import:${record.id}`] });
+      findings.push({ code: 'realm_source_import_invalid', message: `adapted_fork ${record.id} must declare local precedence over the source ref.`, pointers: [`realm-import:${record.id}`] });
     }
   }
   if (knownRealmRelease && record.state === 'imported_ref' && record.realmRelease !== knownRealmRelease) {

@@ -109,7 +109,7 @@ test('wave-6 persistence: realm imports live on the truth package and gate its v
   const pkg2 = engine.addRealmImport(pkg, badFork, NOW);
   const report = engine.validateTruthPackage(pkg2);
   assert.equal(report.valid, false);
-  assert.ok(report.findings.some((f) => f.code === 'realm_world_agent_import_invalid'));
+  assert.ok(report.findings.some((f) => f.code === 'realm_source_import_invalid'));
 });
 
 test('wave-12 lifecycle: regeneration requests carry a real status (queued → executed/deferred/failed)', async () => {

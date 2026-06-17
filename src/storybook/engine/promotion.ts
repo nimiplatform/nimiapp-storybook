@@ -20,7 +20,7 @@ export type ImpactClass = 'local' | 'scoped' | 'durable';
 export type ProtectedClass =
   | 'realm-imported'
   | 'hard-world-rule'
-  | 'durable-agent-identity'
+  | 'durable-source-identity'
   | 'private-fact'
   | 'content-boundary'
   | 'route-topology'
@@ -175,7 +175,7 @@ export function detectProtectedClasses(signals: PromotionSignals): ProtectedClas
   if (signals.touchesRouteTopology || signals.targetObjectFamily === 'branch-topology') classes.add('route-topology');
   if (signals.touchesEnding || signals.targetObjectFamily === 'state-ending-matrix') classes.add('ending');
   if (signals.touchesHardWorldRule) classes.add('hard-world-rule');
-  if (signals.touchesDurableAgentIdentity) classes.add('durable-agent-identity');
+  if (signals.touchesDurableAgentIdentity) classes.add('durable-source-identity');
   if (signals.touchesSafetyPolicy) classes.add('safety-policy');
   if (signals.requiresPublishAuthority) classes.add('publish-export-authority');
   if (signals.mutationType === 'delete') classes.add('hard-truth-deletion');

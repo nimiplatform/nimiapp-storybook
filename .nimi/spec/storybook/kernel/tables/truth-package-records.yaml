@@ -11,7 +11,7 @@ required_top_level_fields:
   - governance
   - rules
   - scenarioFrame
-  - agentCast
+  - sourceCast
   - bible
   - adaptationBrief
   - visualStyleGuide

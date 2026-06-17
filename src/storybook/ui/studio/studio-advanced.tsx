@@ -24,7 +24,7 @@ import { type StoredProjectRecord } from '../../store/storybook-store.js';
 // regeneration requests are scope/target validated, and diagnostics aggregate every
 // owner-slice validator. None of this leaks to Play.
 
-const SCOPES: RegenerationScope[] = ['segment', 'node', 'asset', 'scene', 'chapter', 'bible-slice', 'agent-scene', 'branch', 'source-structure'];
+const SCOPES: RegenerationScope[] = ['segment', 'node', 'asset', 'scene', 'chapter', 'bible-slice', 'source-scene', 'branch', 'source-structure'];
 
 function nowIso(): string {
   return new Date().toISOString();

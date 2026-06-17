@@ -10,7 +10,7 @@ record shape is registered in
 
 ### SBK-DATA-02 Truth Refs
 
-Every canonical scenario, agent, bible, branch topology, state matrix, chapter,
+Every canonical scenario, source, bible, branch topology, state matrix, chapter,
 asset, and rule record uses a resolvable `TruthRef`. Evidence, derivation, and
 projection records may only point at known truth refs.
 
@@ -24,9 +24,9 @@ an approved divergence. Unbacked hard rules fail validation.
 Projection inputs declare a projection type and one or more governing truth
 refs. Empty governing truth refs or stale/invalid projections block promotion.
 
-### SBK-DATA-05 Agent Visibility
+### SBK-DATA-05 Source Visibility
 
-Agent private facts are distinct from public facts. Projection and generation
+Source private facts are distinct from public facts. Projection and generation
 surfaces must not leak private facts into player-visible output by default.
 
 ### SBK-DATA-06 Branch Reachability

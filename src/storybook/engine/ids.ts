@@ -20,14 +20,14 @@ export function mintId(prefix: string): string {
 /** Truth-rule and truth-object families used inside the truth-ref namespace. */
 export type TruthFamily =
   | 'world-rule'
-  | 'agent-rule'
+  | 'source-profile'
   | 'storybook-rule'
   | 'branch-rule'
   | 'style-rule'
   | 'asset-rule'
   | 'feedback-rule'
   | 'scenario-frame'
-  | 'agent-cast'
+  | 'source-cast'
   | 'storybook-bible'
   | 'adaptation-brief'
   | 'divergence-decision'

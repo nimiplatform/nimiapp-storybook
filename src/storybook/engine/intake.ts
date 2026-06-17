@@ -6,12 +6,12 @@
 // Wave-5 concrete limits (set here for v1):
 //   - concise source excerpt: <= 20000 chars (over => source_too_large_for_app_lite_builder)
 //   - structured notes: <= 200 entries
-//   - character card: must carry a name + at least one descriptive field
+//   - persona seed: must carry a name + at least one descriptive field
 //   - original scenario: must carry a premise + (cast or rules)
 
 import { makeTruthRef, mintId } from './ids.js';
 import { type Result, ok, fail } from './failure.js';
-import { type ScenarioFrame, type AgentCast, type AgentSheet, type StorybookBible, type Role } from './foundation.js';
+import { type ScenarioFrame, type SourceCast, type SourceSheet, type StorybookBible, type Role } from './foundation.js';
 import {
   type StorybookProject,
   type StorybookTruthPackage,
@@ -23,12 +23,12 @@ import {
 export const MAX_SOURCE_CHARS = 20000;
 export const MAX_NOTE_COUNT = 200;
 
-export type IntakeKind = 'manual-setting' | 'original-scenario' | 'character-card' | 'short-fiction' | 'document-text' | 'structured-notes';
+export type IntakeKind = 'manual-setting' | 'original-scenario' | 'persona-seed' | 'short-fiction' | 'document-text' | 'structured-notes';
 
 export type IntakeInput =
   | { kind: 'manual-setting'; projectId: string; background: string; roles: Role[]; rules: string[]; playerPosition: string; contentBoundaries: string[] }
   | { kind: 'original-scenario'; projectId: string; premise: string; cast: { name: string; summary: string }[]; rules: string[]; playerPosition?: string; contentBoundaries?: string[] }
-  | { kind: 'character-card'; projectId: string; card: { name: string; persona?: string; voice?: string; publicFacts?: string[]; privateFacts?: string[]; goals?: string[]; appearance?: string } }
+  | { kind: 'persona-seed'; projectId: string; card: { name: string; persona?: string; voice?: string; publicFacts?: string[]; privateFacts?: string[]; goals?: string[]; appearance?: string } }
   | { kind: 'short-fiction'; projectId: string; title?: string; text: string; contentBoundaries?: string[] }
   | { kind: 'document-text'; projectId: string; title?: string; text: string; contentBoundaries?: string[] }
   | { kind: 'structured-notes'; projectId: string; notes: { label: string; value: string }[]; contentBoundaries?: string[] };
@@ -58,7 +58,7 @@ export type IntakeConversion = {
   seed: ProjectSeed;
   index: SeedIndex;
   scenarioFrame: ScenarioFrame | null;
-  agentCast: AgentCast | null;
+  sourceCast: SourceCast | null;
   bible: StorybookBible;
   evidenceSeeds: Omit<TruthEvidenceBinding, 'id'>[];
 };
@@ -94,7 +94,7 @@ export function convertIntake(input: IntakeInput, now: string): Result<IntakeCon
   const seed: ProjectSeed = { id: mintId('seed'), projectId, intakeKind: input.kind, createdAt: now };
 
   const sceneRef = makeTruthRef(projectId, 'scenario-frame', 'frame');
-  const castRef = makeTruthRef(projectId, 'agent-cast', 'cast');
+  const castRef = makeTruthRef(projectId, 'source-cast', 'cast');
   const bibleRef = makeTruthRef(projectId, 'storybook-bible', 'bible');
 
   switch (input.kind) {
@@ -131,7 +131,7 @@ export function convertIntake(input: IntakeInput, now: string): Result<IntakeCon
         seed,
         index,
         scenarioFrame,
-        agentCast: null,
+        sourceCast: null,
         bible,
         evidenceSeeds: [
           { truthRef: sceneRef, kind: 'edit', sourceRef: seed.id, note: '手动设定直接录入为场景框架。' },
@@ -161,11 +161,11 @@ export function convertIntake(input: IntakeInput, now: string): Result<IntakeCon
         playerPosition: input.playerPosition?.trim() || '主角视角参与者',
         contentBoundaries: input.contentBoundaries?.length ? input.contentBoundaries : ['默认内容边界：尊重用户设定的题材与分级。'],
       };
-      const agentCast: AgentCast = {
+      const sourceCast: SourceCast = {
         ref: castRef,
-        agents: input.cast.map((c, i): AgentSheet => ({
-          id: `agent-${i}`,
-          ref: makeTruthRef(projectId, 'agent-rule', `agent-${i}`),
+        sources: input.cast.map((c, i): SourceSheet => ({
+          id: `source-${i}`,
+          ref: makeTruthRef(projectId, 'source-profile', `source-${i}`),
           name: c.name,
           voice: '默认语气',
           publicFacts: c.summary ? [c.summary] : [],
@@ -188,26 +188,26 @@ export function convertIntake(input: IntakeInput, now: string): Result<IntakeCon
         seed,
         index,
         scenarioFrame,
-        agentCast,
+        sourceCast,
         bible,
         evidenceSeeds: [
           { truthRef: sceneRef, kind: 'seed', sourceRef: seed.id, note: '原创情景种子派生场景框架。' },
-          { truthRef: castRef, kind: 'seed', sourceRef: seed.id, note: '原创情景 cast 派生 agent 候选。' },
+          { truthRef: castRef, kind: 'seed', sourceRef: seed.id, note: '原创情景 cast 派生 source 候选。' },
           { truthRef: bibleRef, kind: 'seed', sourceRef: seed.id, note: '原创情景种子派生 Bible 草案。' },
         ],
       });
     }
 
-    case 'character-card': {
+    case 'persona-seed': {
       const card = input.card;
       const descriptive = [card.persona, card.appearance, ...(card.publicFacts ?? []), ...(card.goals ?? [])].filter((v) => v && v.trim());
-      if (!card.name.trim()) return fail('character_card_invalid', 'Character card requires a name.', ['card.name']);
-      if (descriptive.length === 0) return fail('character_card_invalid', 'Character card needs at least one descriptive field (persona/appearance/publicFacts/goals).', ['card']);
-      const agentRef = makeTruthRef(projectId, 'agent-rule', 'card-agent');
-      const agentCast: AgentCast = {
+      if (!card.name.trim()) return fail('persona_seed_invalid', 'Persona seed requires a name.', ['card.name']);
+      if (descriptive.length === 0) return fail('persona_seed_invalid', 'Persona seed needs at least one descriptive field (persona/appearance/publicFacts/goals).', ['card']);
+      const agentRef = makeTruthRef(projectId, 'source-profile', 'card-source');
+      const sourceCast: SourceCast = {
         ref: castRef,
-        agents: [{
-          id: 'agent-card',
+        sources: [{
+          id: 'source-card',
           ref: agentRef,
           name: card.name,
           voice: card.voice?.trim() || '默认语气',
@@ -222,7 +222,7 @@ export function convertIntake(input: IntakeInput, now: string): Result<IntakeCon
       const index: SeedIndex = {
         ref: makeTruthRef(projectId, 'scenario-seed-index', 'index'),
         kind: 'scenario',
-        summary: `角色卡：${card.name}`,
+        summary: `Persona Seed：${card.name}`,
         facts: descriptive as string[],
         entities: [{ name: card.name, kind: 'character' }],
         excerptCount: 0,
@@ -240,11 +240,11 @@ export function convertIntake(input: IntakeInput, now: string): Result<IntakeCon
         seed,
         index,
         scenarioFrame: null,
-        agentCast,
+        sourceCast,
         bible,
         evidenceSeeds: [
-          { truthRef: agentRef, kind: 'source', sourceRef: seed.id, note: '角色卡转换为 agent 真值候选。' },
-          { truthRef: bibleRef, kind: 'source', sourceRef: seed.id, note: '角色卡派生 Bible 草案。' },
+          { truthRef: agentRef, kind: 'source', sourceRef: seed.id, note: 'Persona Seed转换为 source 真值候选。' },
+          { truthRef: bibleRef, kind: 'source', sourceRef: seed.id, note: 'Persona Seed派生 Bible 草案。' },
         ],
       });
     }
@@ -286,7 +286,7 @@ export function convertIntake(input: IntakeInput, now: string): Result<IntakeCon
         seed,
         index,
         scenarioFrame,
-        agentCast: null,
+        sourceCast: null,
         bible,
         evidenceSeeds: [
           { truthRef: sceneRef, kind: 'source', sourceRef: index.ref, note: '源文本摘要派生场景框架。' },
@@ -328,7 +328,7 @@ export function convertIntake(input: IntakeInput, now: string): Result<IntakeCon
         seed,
         index,
         scenarioFrame,
-        agentCast: null,
+        sourceCast: null,
         bible,
         evidenceSeeds: [
           { truthRef: sceneRef, kind: 'source', sourceRef: index.ref, note: '结构化笔记派生场景框架。' },
@@ -356,7 +356,7 @@ export function seedTruthPackage(project: StorybookProject, conversion: IntakeCo
     ...pkg,
     id: project.truthPackageId,
     scenarioFrame: conversion.scenarioFrame,
-    agentCast: conversion.agentCast,
+    sourceCast: conversion.sourceCast,
     bible: conversion.bible,
     evidence: conversion.evidenceSeeds.map((seedEvidence) => ({ ...seedEvidence, id: mintId('evid') })),
     derivations: conversion.evidenceSeeds.map((seedEvidence) => ({
@@ -368,7 +368,7 @@ export function seedTruthPackage(project: StorybookProject, conversion: IntakeCo
     })),
   };
   // Register a governing Studio projection input over the seeded foundation refs.
-  const refs = [conversion.scenarioFrame?.ref, conversion.agentCast?.ref, conversion.bible.ref].filter((r): r is NonNullable<typeof r> => Boolean(r));
+  const refs = [conversion.scenarioFrame?.ref, conversion.sourceCast?.ref, conversion.bible.ref].filter((r): r is NonNullable<typeof r> => Boolean(r));
   pkg = addProjectionInput(pkg, { projectionType: 'studio', governingTruthRefs: refs, validationStatus: 'valid' });
   return pkg;
 }

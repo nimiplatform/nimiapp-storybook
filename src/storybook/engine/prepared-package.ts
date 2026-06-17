@@ -87,16 +87,16 @@ export function isAppVersionCompatible(appVersion: string, range: AppCompatRange
   return compareSemver(appVersion, range.min) >= 0 && compareSemver(appVersion, range.max) < 0;
 }
 
-/** Build redaction proof by confirming no private agent facts reached the public cast. */
+/** Build redaction proof by confirming no private source facts reached the public cast. */
 function buildRedactionProof(pkg: StorybookTruthPackage, publicCast: PublicCastMember[]): RedactionProof {
   const publicFactSet = new Set(publicCast.flatMap((c) => c.publicFacts.map((f) => f.trim().toLowerCase())));
   const leaks: string[] = [];
   let redacted = 0;
-  for (const agent of pkg.agentCast?.agents ?? []) {
-    for (const priv of agent.privateFacts) {
+  for (const source of pkg.sourceCast?.sources ?? []) {
+    for (const priv of source.privateFacts) {
       redacted += 1;
       if (publicFactSet.has(priv.trim().toLowerCase())) {
-        leaks.push(`${agent.name}: ${priv}`);
+        leaks.push(`${source.name}: ${priv}`);
       }
     }
   }

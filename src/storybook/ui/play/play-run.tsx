@@ -14,7 +14,7 @@ import {
   mintId,
   type Choice,
   type PlayableChapter,
-  type AgentTurnRequest,
+  type SourceTurnRequest,
 } from '../../engine/index.js';
 import { getImportedPackage, getRun, saveRun, type RunRecord } from '../../store/storybook-store.js';
 import { runSceneText } from '../../ai/storybook-runtime.js';
@@ -95,7 +95,7 @@ export function PlayRun({ runId, onExit }: { runId: string; onExit: () => void }
       publicCast: prepared!.publicCast,
       run: record!.run,
     });
-    const request: AgentTurnRequest = { id: turnRef, runId: record!.run.id, agentId: prepared!.publicCast[0]?.name ?? 'narrator', trigger: 'free-text', userText: text };
+    const request: SourceTurnRequest = { id: turnRef, runId: record!.run.id, sourceId: prepared!.publicCast[0]?.name ?? 'narrator', trigger: 'free-text', userText: text };
 
     const outcome = await processTurn({
       request,
@@ -126,7 +126,7 @@ export function PlayRun({ runId, onExit }: { runId: string; onExit: () => void }
     const guardedText = outcome.record.coreOutput.spineEvents.map((event) => event.text).join('\n');
     const merged = appendTranscriptEntry(latest.transcript, {
       at: nowIso(),
-      kind: 'agent-turn',
+      kind: 'source-turn',
       detail: outcome.status === 'ADJUSTED' ? 'AI 场景回应（守卫已调整）' : 'AI 场景回应（守卫通过）',
       nodeId: node.id,
       text: guardedText,

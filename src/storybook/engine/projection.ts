@@ -1,7 +1,7 @@
 // Layer 2: projection. Turns the authority package into consumable surfaces with
 // governing truth refs and explicit staleness. A projection may cache, summarize,
 // or format truth; it must NEVER redefine truth or be the only place a semantic
-// rule exists. Private agent facts are redacted out of any player-facing
+// rule exists. Private source facts are redacted out of any player-facing
 // projection.
 
 import { type TruthRef } from './ids.js';
@@ -53,11 +53,11 @@ export function buildStudioProjection(pkg: StorybookTruthPackage): ProjectionEnv
   } else {
     cards.push({ kind: 'scenario-frame', ref: null, title: '场景框架', summary: '尚未建立', complete: false });
   }
-  if (pkg.agentCast) {
-    governing.push(pkg.agentCast.ref);
-    cards.push({ kind: 'agent-cast', ref: pkg.agentCast.ref, title: '角色阵容', summary: `${pkg.agentCast.agents.length} 位角色`, complete: pkg.agentCast.agents.length > 0 });
+  if (pkg.sourceCast) {
+    governing.push(pkg.sourceCast.ref);
+    cards.push({ kind: 'source-cast', ref: pkg.sourceCast.ref, title: '角色阵容', summary: `${pkg.sourceCast.sources.length} 位角色`, complete: pkg.sourceCast.sources.length > 0 });
   } else {
-    cards.push({ kind: 'agent-cast', ref: null, title: '角色阵容', summary: '尚未建立', complete: false });
+    cards.push({ kind: 'source-cast', ref: null, title: '角色阵容', summary: '尚未建立', complete: false });
   }
   if (pkg.bible) {
     governing.push(pkg.bible.ref);
@@ -75,7 +75,7 @@ export function buildStudioProjection(pkg: StorybookTruthPackage): ProjectionEnv
   }
 
   const provenance = [...collectProvenance(pkg)];
-  const generationScopes = ['scenario-frame', 'agent-cast', 'storybook-bible', 'assets', 'chapters'].filter((scope) => isScopeGeneratable(pkg, scope));
+  const generationScopes = ['scenario-frame', 'source-cast', 'storybook-bible', 'assets', 'chapters'].filter((scope) => isScopeGeneratable(pkg, scope));
 
   return {
     projectionType: 'studio',
@@ -90,7 +90,7 @@ export function buildStudioProjection(pkg: StorybookTruthPackage): ProjectionEnv
 function collectProvenance(pkg: StorybookTruthPackage): { ref: TruthRef; evidenceCount: number; derivationCount: number }[] {
   const refs = new Set<TruthRef>();
   if (pkg.scenarioFrame) refs.add(pkg.scenarioFrame.ref);
-  if (pkg.agentCast) refs.add(pkg.agentCast.ref);
+  if (pkg.sourceCast) refs.add(pkg.sourceCast.ref);
   if (pkg.bible) refs.add(pkg.bible.ref);
   return [...refs].map((ref) => ({
     ref,
@@ -102,7 +102,7 @@ function collectProvenance(pkg: StorybookTruthPackage): { ref: TruthRef; evidenc
 function isScopeGeneratable(pkg: StorybookTruthPackage, scope: string): boolean {
   switch (scope) {
     case 'scenario-frame': return Boolean(pkg.scenarioFrame);
-    case 'agent-cast': return Boolean(pkg.agentCast);
+    case 'source-cast': return Boolean(pkg.sourceCast);
     case 'storybook-bible': return Boolean(pkg.bible);
     case 'assets': return Boolean(pkg.bible?.approved);
     case 'chapters': return Boolean(pkg.bible?.approved);
@@ -128,14 +128,14 @@ export function buildPlayProjection(pkg: StorybookTruthPackage): ProjectionEnvel
   const governing: TruthRef[] = [];
   if (pkg.bible) governing.push(pkg.bible.ref);
   if (pkg.scenarioFrame) governing.push(pkg.scenarioFrame.ref);
-  if (pkg.agentCast) governing.push(pkg.agentCast.ref);
+  if (pkg.sourceCast) governing.push(pkg.sourceCast.ref);
   if (pkg.branchTopology) governing.push(pkg.branchTopology.ref);
 
-  // Redaction: never project private agent facts into the player surface.
-  const publicCast: PublicCastMember[] = (pkg.agentCast?.agents ?? []).map((agent) => ({
-    name: agent.name,
-    voice: agent.voice,
-    publicFacts: [...agent.publicFacts],
+  // Redaction: never project private source facts into the player surface.
+  const publicCast: PublicCastMember[] = (pkg.sourceCast?.sources ?? []).map((source) => ({
+    name: source.name,
+    voice: source.voice,
+    publicFacts: [...source.publicFacts],
   }));
 
   const startChapterId = pkg.branchTopology?.startChapterId ?? pkg.chapters[0]?.id ?? null;
@@ -166,7 +166,7 @@ export function buildPlayProjection(pkg: StorybookTruthPackage): ProjectionEnvel
 
 // --- Narrative context projection (bounded CANON/STORY/SUBJECT/RELATION) ---
 
-export function buildNarrativeContextProjection(pkg: StorybookTruthPackage, run: StoryRun, agentId: string, turnRef: string): NarrativeContextProjection {
+export function buildNarrativeContextProjection(pkg: StorybookTruthPackage, run: StoryRun, sourceId: string, turnRef: string): NarrativeContextProjection {
   const governing: TruthRef[] = [];
   const canon: string[] = [];
   if (pkg.bible) {
@@ -187,23 +187,23 @@ export function buildNarrativeContextProjection(pkg: StorybookTruthPackage, run:
   for (const [key, value] of Object.entries(run.flags)) story.push(`标记 ${key}=${value}`);
 
   const subject: string[] = [];
-  const agent = pkg.agentCast?.agents.find((a) => a.id === agentId) ?? null;
-  if (agent) {
-    governing.push(agent.ref);
-    subject.push(`角色: ${agent.name}（语气: ${agent.voice}）`);
-    for (const fact of agent.publicFacts) subject.push(`公开事实: ${fact}`);
-    subject.push(`可用行动: ${agent.allowedActions.join('、')}`);
+  const source = pkg.sourceCast?.sources.find((a) => a.id === sourceId) ?? null;
+  if (source) {
+    governing.push(source.ref);
+    subject.push(`角色: ${source.name}（语气: ${source.voice}）`);
+    for (const fact of source.publicFacts) subject.push(`公开事实: ${fact}`);
+    subject.push(`可用行动: ${source.allowedActions.join('、')}`);
     // NOTE: private facts are intentionally NOT projected into the turn context by default.
   }
 
-  const relation: string[] = agent ? [`玩家与 ${agent.name} 的当前关系：中立（运行内派生）`] : [];
+  const relation: string[] = source ? [`玩家与 ${source.name} 的当前关系：中立（运行内派生）`] : [];
 
   return { runId: run.id, turnRef, scopes: { canon, story, subject, relation }, governingTruthRefs: governing };
 }
 
 /**
  * Play-side narrative context (redacted). Built from a prepared package's public
- * projection — NOT from authority — so it can never carry private agent facts.
+ * projection — NOT from authority — so it can never carry private source facts.
  * Play surfaces use this to run the guarded narrative engine without holding the
  * truth package. `governingTruthRefs` is empty because Play consumes a projection,
  * not authority directly.
@@ -214,7 +214,7 @@ export function buildPlayNarrativeContext(input: {
   storySummary: string;
   contentBoundaries: string[];
   publicCast: PublicCastMember[];
-  agentName?: string;
+  sourceName?: string;
   run: StoryRun;
 }): NarrativeContextProjection {
   const canon: string[] = [];
@@ -226,19 +226,19 @@ export function buildPlayNarrativeContext(input: {
   for (const [key, value] of Object.entries(input.run.flags)) story.push(`标记 ${key}=${value}`);
 
   const subject: string[] = [];
-  const agent = input.agentName ? input.publicCast.find((c) => c.name === input.agentName) ?? null : input.publicCast[0] ?? null;
-  if (agent) {
-    subject.push(`角色: ${agent.name}（语气: ${agent.voice}）`);
-    for (const fact of agent.publicFacts) subject.push(`公开事实: ${fact}`); // public only — never private
+  const source = input.sourceName ? input.publicCast.find((c) => c.name === input.sourceName) ?? null : input.publicCast[0] ?? null;
+  if (source) {
+    subject.push(`角色: ${source.name}（语气: ${source.voice}）`);
+    for (const fact of source.publicFacts) subject.push(`公开事实: ${fact}`); // public only — never private
   }
-  const relation: string[] = agent ? [`玩家与 ${agent.name} 的当前关系：运行内派生`] : [];
+  const relation: string[] = source ? [`玩家与 ${source.name} 的当前关系：运行内派生`] : [];
 
   return { runId: input.run.id, turnRef: input.turnRef, scopes: { canon, story, subject, relation }, governingTruthRefs: [] };
 }
 
 // --- Render projection (renderer-facing; never writes spine) ---
 
-export type RenderLine = { kind: string; text: string; agentId?: string };
+export type RenderLine = { kind: string; text: string; sourceId?: string };
 
 export type RenderProjectionPayload = {
   lines: RenderLine[];
@@ -257,7 +257,7 @@ export function buildRenderProjection(pkg: StorybookTruthPackage, run: StoryRun,
   }
   if (coreOutput) {
     for (const event of coreOutput.spineEvents) {
-      lines.push({ kind: event.kind, text: event.text, agentId: event.agentId });
+      lines.push({ kind: event.kind, text: event.text, sourceId: event.sourceId });
     }
   }
   const assetRefs = pkg.assets.filter((a) => a.artifactRef).map((a) => a.artifactRef as string);

@@ -8,7 +8,7 @@ import { listProjects } from '../../store/storybook-store.js';
 const MODE_LABEL: Record<string, string> = {
   'source-backed': '源材料改编',
   'document-backed': '文档改编',
-  'character-card': '角色卡',
+  'persona-seed': 'Persona Seed',
   'original-scenario': '原创情景',
   'manual-setting': '手动设定',
   'structured-notes': '结构化笔记',
@@ -23,7 +23,7 @@ export function StudioHome({ onNewProject, onOpenProject }: { onNewProject: () =
         <div className="sb-section__head">
           <div>
             <h2>创作者 Studio</h2>
-            <p>把手动设定、短篇、文档文本、结构化笔记、角色卡或原创情景转化为结构化的 Storybook 记录，审阅基础（场景框架 / 角色阵容 / Storybook Bible / 分支拓扑 / 资产计划），校验后准备成可游玩的 Play package。</p>
+            <p>把手动设定、短篇、文档文本、结构化笔记、Persona Seed或原创情景转化为结构化的 Storybook 记录，审阅基础（场景框架 / 角色阵容 / Storybook Bible / 分支拓扑 / 资产计划），校验后准备成可游玩的 Play package。</p>
           </div>
           <Button type="button" tone="primary" onClick={onNewProject} data-testid="studio-new-project">新建项目</Button>
         </div>

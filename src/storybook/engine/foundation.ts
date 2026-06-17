@@ -1,5 +1,5 @@
 // Foundation domain objects: the creator-visible product checkpoints that sit in
-// the truth package's `truth.storybook` / `truth.agents` sections. These are
+// the truth package's `truth.storybook` / `truth.sources` sections. These are
 // app-owned structured records, not prompts or lorebooks. Each carries a truth
 // ref so evidence bindings and projections can point back to it.
 
@@ -22,25 +22,25 @@ export type ScenarioFrame = {
   contentBoundaries: string[];
 };
 
-export type AgentSheet = {
+export type SourceSheet = {
   id: string;
   ref: TruthRef;
   name: string;
   voice: string;
   /** Facts the player may learn freely. */
   publicFacts: string[];
-  /** Facts the agent withholds; must never leak through projection by default. */
+  /** Facts the source withholds; must never leak through projection by default. */
   privateFacts: string[];
   goals: string[];
   allowedActions: string[];
   appearance?: string;
-  /** Forge-aligned provenance for the agent rule layer. */
+  /** Forge-aligned provenance for the source rule layer. */
   provenance: 'creator' | 'world-inherited' | 'narrative-emerged' | 'system';
 };
 
-export type AgentCast = {
+export type SourceCast = {
   ref: TruthRef;
-  agents: AgentSheet[];
+  sources: SourceSheet[];
 };
 
 export type StorybookBible = {
@@ -103,19 +103,19 @@ export function validateScenarioFrame(frame: ScenarioFrame): ValidationFinding[]
   return findings;
 }
 
-export function validateAgentCast(cast: AgentCast): ValidationFinding[] {
+export function validateSourceCast(cast: SourceCast): ValidationFinding[] {
   const findings: ValidationFinding[] = [];
-  cast.agents.forEach((agent, index) => {
-    if (!agent.name.trim()) {
-      findings.push({ code: 'agent_cast_visibility_invalid', message: `Agent ${index} has no name.`, pointers: [`agents[${index}].name`] });
+  cast.sources.forEach((source, index) => {
+    if (!source.name.trim()) {
+      findings.push({ code: 'source_cast_visibility_invalid', message: `Source ${index} has no name.`, pointers: [`sources[${index}].name`] });
     }
-    const publicSet = new Set(agent.publicFacts.map((f) => f.trim().toLowerCase()).filter(Boolean));
-    for (const priv of agent.privateFacts) {
+    const publicSet = new Set(source.publicFacts.map((f) => f.trim().toLowerCase()).filter(Boolean));
+    for (const priv of source.privateFacts) {
       if (publicSet.has(priv.trim().toLowerCase())) {
         findings.push({
-          code: 'agent_cast_visibility_invalid',
-          message: `Agent "${agent.name}" leaks a private fact into public facts: "${priv}".`,
-          pointers: [`agents[${index}].privateFacts`],
+          code: 'source_cast_visibility_invalid',
+          message: `Source "${source.name}" leaks a private fact into public facts: "${priv}".`,
+          pointers: [`sources[${index}].privateFacts`],
         });
       }
     }

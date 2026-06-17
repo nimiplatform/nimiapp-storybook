@@ -7,7 +7,7 @@ export type StorybookFailureCode =
   // intake / lite rule builder
   | 'source_too_large_for_app_lite_builder'
   | 'scenario_seed_invalid'
-  | 'character_card_invalid'
+  | 'persona_seed_invalid'
   | 'source_corpus_invalid'
   | 'structured_notes_invalid'
   | 'document_text_invalid'
@@ -23,7 +23,7 @@ export type StorybookFailureCode =
   | 'projection_stale'
   // foundation
   | 'scenario_frame_incomplete'
-  | 'agent_cast_visibility_invalid'
+  | 'source_cast_visibility_invalid'
   | 'branch_topology_invalid'
   | 'state_ending_matrix_invalid'
   | 'asset_spec_incomplete'
@@ -46,7 +46,7 @@ export type StorybookFailureCode =
   | 'narrative_guard_rejected'
   | 'narrative_guard_adjusted'
   | 'narrative_spine_write_conflict'
-  | 'agent_turn_failed'
+  | 'source_turn_failed'
   | 'run_transcript_inconsistent'
   // playable run / branch model (wave-10)
   | 'branch_switch_invalid'
@@ -66,7 +66,7 @@ export type StorybookFailureCode =
   | 'generation_retry_exhausted'
   | 'generation_provenance_missing'
   // realm import / promotion boundary
-  | 'realm_world_agent_import_invalid'
+  | 'realm_source_import_invalid'
   | 'realm_imported_ref_stale'
   | 'realm_import_conflict'
   | 'realm_promotion_request_invalid'

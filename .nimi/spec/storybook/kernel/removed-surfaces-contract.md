@@ -15,7 +15,7 @@ Kit/SDK AI Config owns model configuration.
 ### SBK-REMOVED-03 Shared Memory Mutation Removal
 
 Storybook must not write project memory, transcripts, or feedback into Runtime
-agent memory, Realm world state, or shared ecosystem memory.
+source memory, Realm world state, or shared ecosystem memory.
 
 ### SBK-REMOVED-04 External Engine Dependency Removal
 

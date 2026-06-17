@@ -1,5 +1,5 @@
 // Adaptation model (wave-7). Sits in the truth package's `truth.storybook` section
-// alongside the scenario frame, agent cast, and bible. Three additions over the
+// alongside the scenario frame, source cast, and bible. Three additions over the
 // baseline foundation:
 //
 //   adaptation-brief    — a SPOILER-SAFE direction proposal shown for user

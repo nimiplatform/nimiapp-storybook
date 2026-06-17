@@ -76,7 +76,7 @@ export type RunTranscriptEntryKind =
   | 'enter-node'
   | 'choice'
   | 'free-text'
-  | 'agent-turn'
+  | 'source-turn'
   | 'edit'
   | 'finding'
   | 'promotion'
@@ -113,16 +113,16 @@ export type NarrativeContextProjection = {
   governingTruthRefs: TruthRef[];
 };
 
-export type AgentTurnRequest = {
+export type SourceTurnRequest = {
   id: string;
   runId: string;
-  agentId: string;
+  sourceId: string;
   trigger: 'choice' | 'free-text' | 'system';
   userText?: string;
 };
 
 export type SpineEventKind = 'narration' | 'dialogue' | 'action' | 'state-note';
-export type SpineEvent = { id: string; kind: SpineEventKind; text: string; agentId?: string };
+export type SpineEvent = { id: string; kind: SpineEventKind; text: string; sourceId?: string };
 export type StateChange = { op: 'set' | 'add'; target: string; value: number | boolean };
 
 /** CoreOutput whitelist: ONLY spineEvents, stateChanges, metrics are allowed. */
@@ -142,7 +142,7 @@ export type EngineGuardResult = {
 
 export type NarrativeTurnRecord = {
   id: string;
-  request: AgentTurnRequest;
+  request: SourceTurnRequest;
   context: NarrativeContextProjection;
   coreOutput: NarrativeCoreOutput | null;
   guard: EngineGuardResult;

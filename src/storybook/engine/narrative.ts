@@ -13,7 +13,7 @@
 import { mintId } from './ids.js';
 import { type Result, ok, fail } from './failure.js';
 import {
-  type AgentTurnRequest,
+  type SourceTurnRequest,
   type NarrativeContextProjection,
   type NarrativeCoreOutput,
   type SpineEvent,
@@ -162,10 +162,10 @@ export type TurnGenerateResult =
   | { ok: true; candidate: NarrativeCoreOutput }
   | { ok: false; reason: string; message: string };
 
-export type TurnGenerate = (request: AgentTurnRequest, context: NarrativeContextProjection) => Promise<TurnGenerateResult> | TurnGenerateResult;
+export type TurnGenerate = (request: SourceTurnRequest, context: NarrativeContextProjection) => Promise<TurnGenerateResult> | TurnGenerateResult;
 
 export type ProcessTurnInput = {
-  request: AgentTurnRequest;
+  request: SourceTurnRequest;
   context: NarrativeContextProjection;
   envelope: NarrativeRunEnvelope;
   generate: TurnGenerate;
@@ -199,7 +199,7 @@ export async function processTurn(input: ProcessTurnInput): Promise<ProcessTurnO
   // generate (Runtime may execute the model here; it does not own the record).
   const generated = await input.generate(request, context);
   if (!generated.ok) {
-    return rejectedRecord(turnId, request, context, { ...baseProvenance, generateReason: generated.reason }, envelope, 'agent_turn_failed', generated.message);
+    return rejectedRecord(turnId, request, context, { ...baseProvenance, generateReason: generated.reason }, envelope, 'source_turn_failed', generated.message);
   }
 
   // guard.
@@ -236,7 +236,7 @@ export async function processTurn(input: ProcessTurnInput): Promise<ProcessTurnO
 
 function rejectedRecord(
   turnId: string,
-  request: AgentTurnRequest,
+  request: SourceTurnRequest,
   context: NarrativeContextProjection,
   provenance: Record<string, string>,
   envelope: NarrativeRunEnvelope,

@@ -17,7 +17,7 @@ import { type StorybookTruthPackage, bumpVersion, collectKnownTruthRefs } from '
 export type EditTargetKind =
   | 'bible'
   | 'scenario-frame'
-  | 'agent'
+  | 'source'
   | 'node-text'
   | 'choice'
   | 'asset'
@@ -128,12 +128,12 @@ export type RegenerationScope =
   | 'scene'
   | 'chapter'
   | 'bible-slice'
-  | 'agent-scene'
+  | 'source-scene'
   | 'branch'
   | 'source-structure';
 
 const ADMITTED_SCOPES: ReadonlySet<RegenerationScope> = new Set<RegenerationScope>([
-  'segment', 'node', 'asset', 'scene', 'chapter', 'bible-slice', 'agent-scene', 'branch', 'source-structure',
+  'segment', 'node', 'asset', 'scene', 'chapter', 'bible-slice', 'source-scene', 'branch', 'source-structure',
 ]);
 
 export type RegenerationStatus = 'queued' | 'executed' | 'failed' | 'deferred';

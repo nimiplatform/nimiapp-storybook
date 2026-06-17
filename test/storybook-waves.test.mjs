@@ -119,7 +119,7 @@ test('wave-7: adaptation brief stays spoiler-safe; divergence backs a bible clai
 test('wave-8: guarded turn pipeline writes spine only on approval/adjust', async () => {
   const engine = await importEngine();
   const context = { runId: 'r1', turnRef: 't1', scopes: { canon: ['风格'], story: ['章节'], subject: [], relation: [] }, governingTruthRefs: [] };
-  const request = { id: 'req1', runId: 'r1', agentId: 'a1', trigger: 'free-text', userText: 'hi' };
+  const request = { id: 'req1', runId: 'r1', sourceId: 'a1', trigger: 'free-text', userText: 'hi' };
   const envelope = engine.createRunEnvelope({ runId: 'r1', projectId: 'p1', packageVersion: 1 });
 
   const approved = await engine.processTurn({
