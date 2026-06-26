@@ -1,8 +1,10 @@
 import {
+  areNimiAIScopeRefsEqual,
   createNimiAIConfigStore,
   createNimiAIConfigSubscriptionRegistry,
   createNimiAIHostSurface,
   createNimiAppAIScopeRef,
+  encodeNimiAIScopeRef,
   validateNimiAIConfig,
   versionNimiAIConfig,
   type NimiAIConfig,
@@ -21,12 +23,24 @@ import { STORYBOOK_APP_ID } from '../../contracts/app-identity.ts';
 export const STORYBOOK_AI_SURFACE_ID = 'storybook.generation';
 export const STORYBOOK_AI_CONFIG_STORAGE_PREFIX = 'nimiapp-storybook:generation-ai-config:v2';
 export const STORYBOOK_AI_CONFIG_INDEX_KEY = `${STORYBOOK_AI_CONFIG_STORAGE_PREFIX}:index`;
+export const STORYBOOK_AI_CONFIG_QUARANTINE_PREFIX = `${STORYBOOK_AI_CONFIG_STORAGE_PREFIX}:quarantine:`;
 export const STORYBOOK_AI_PROFILE_LIBRARY_STORAGE_KEY = 'nimiapp-storybook:generation-ai-profiles:v1';
 export const STORYBOOK_AI_PROFILE_LIBRARY_SCHEMA_VERSION = 1;
 
 type StorybookAIProfileLibraryStore = {
   schemaVersion: typeof STORYBOOK_AI_PROFILE_LIBRARY_SCHEMA_VERSION;
   profiles: NimiAIProfile[];
+};
+
+export type StorybookAIConfigStorageRepairResult = {
+  readonly scanned: number;
+  readonly quarantined: number;
+  readonly removedScopeKeys: readonly string[];
+  readonly quarantineKeys: readonly string[];
+};
+
+type StorybookAIConfigStorageRepairOptions = {
+  readonly now?: () => string;
 };
 
 const configSubscriptions = createNimiAIConfigSubscriptionRegistry();
@@ -51,12 +65,118 @@ function useEphemeralStore(): boolean {
 const aiConfigStore = createNimiAIConfigStore({
   indexKey: STORYBOOK_AI_CONFIG_INDEX_KEY,
   storage: () => getStorage() as NimiAIHostStorage | null,
-  configKeyForScope: (scopeKey) => `${STORYBOOK_AI_CONFIG_STORAGE_PREFIX}:${scopeKey}`,
+  configKeyForScope: storybookAIConfigStorageKeyForScopeKey,
   enableEphemeralStore: useEphemeralStore(),
 });
 
 export function createStorybookAIScopeRef(): NimiAIScopeRef {
   return createNimiAppAIScopeRef(STORYBOOK_APP_ID, STORYBOOK_AI_SURFACE_ID);
+}
+
+function storybookAIConfigStorageKeyForScopeKey(scopeKey: string): string {
+  return `${STORYBOOK_AI_CONFIG_STORAGE_PREFIX}:${scopeKey}`;
+}
+
+function removeStorageItem(storage: NimiAIHostStorage, key: string): void {
+  if (storage.removeItem) {
+    storage.removeItem(key);
+    return;
+  }
+  storage.setItem(key, '');
+}
+
+function readScopeIndex(storage: NimiAIHostStorage): string[] {
+  const raw = storage.getItem(STORYBOOK_AI_CONFIG_INDEX_KEY);
+  if (!raw) {
+    return [];
+  }
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed)
+      ? parsed.filter((entry): entry is string => typeof entry === 'string' && entry.trim().length > 0)
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function removeScopeKeyFromIndex(storage: NimiAIHostStorage, scopeKey: string): void {
+  const next = readScopeIndex(storage).filter((entry) => entry !== scopeKey);
+  storage.setItem(STORYBOOK_AI_CONFIG_INDEX_KEY, JSON.stringify([...new Set(next)].sort()));
+}
+
+function uniqueStorybookAIConfigQuarantineKey(
+  storage: NimiAIHostStorage,
+  scopeKey: string,
+  quarantinedAt: string,
+): string {
+  const base = `${STORYBOOK_AI_CONFIG_QUARANTINE_PREFIX}${encodeURIComponent(scopeKey)}:${encodeURIComponent(quarantinedAt)}`;
+  let candidate = base;
+  let index = 1;
+  while (storage.getItem(candidate) !== null) {
+    candidate = `${base}:${index}`;
+    index += 1;
+  }
+  return candidate;
+}
+
+function storedAIConfigInvalidReason(raw: string, scopeRef: NimiAIScopeRef): string | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (error) {
+    return error instanceof Error ? error.message : String(error || 'Invalid stored AIConfig JSON.');
+  }
+  const validation = validateNimiAIConfig(parsed);
+  if (!validation.valid) {
+    return validation.errors.join('; ');
+  }
+  const config = parsed as NimiAIConfig;
+  if (!areNimiAIScopeRefsEqual(config.scopeRef, scopeRef)) {
+    return 'Stored AIConfig scopeRef does not match Storybook scopeRef.';
+  }
+  return null;
+}
+
+export function repairStorybookAIConfigStorageForScope(
+  scopeRef: NimiAIScopeRef = createStorybookAIScopeRef(),
+  storage: NimiAIHostStorage | null = getStorage() as NimiAIHostStorage | null,
+  options: StorybookAIConfigStorageRepairOptions = {},
+): StorybookAIConfigStorageRepairResult {
+  if (!storage) {
+    return { scanned: 0, quarantined: 0, removedScopeKeys: [], quarantineKeys: [] };
+  }
+  const scopeKey = encodeNimiAIScopeRef(scopeRef);
+  const storageKey = storybookAIConfigStorageKeyForScopeKey(scopeKey);
+  const raw = storage.getItem(storageKey);
+  if (!raw) {
+    removeScopeKeyFromIndex(storage, scopeKey);
+    return { scanned: 0, quarantined: 0, removedScopeKeys: [], quarantineKeys: [] };
+  }
+  const reason = storedAIConfigInvalidReason(raw, scopeRef);
+  if (!reason) {
+    return { scanned: 1, quarantined: 0, removedScopeKeys: [], quarantineKeys: [] };
+  }
+
+  const quarantinedAt = options.now?.() ?? new Date().toISOString();
+  const quarantineKey = uniqueStorybookAIConfigQuarantineKey(storage, scopeKey, quarantinedAt);
+  storage.setItem(quarantineKey, JSON.stringify({
+    schemaVersion: 1,
+    reasonCode: 'STORYBOOK_AI_CONFIG_STORE_INVALID',
+    reason,
+    scopeKey,
+    originalKey: storageKey,
+    quarantinedAt,
+    raw,
+  }));
+  removeStorageItem(storage, storageKey);
+  removeScopeKeyFromIndex(storage, scopeKey);
+  return {
+    scanned: 1,
+    quarantined: 1,
+    removedScopeKeys: [scopeKey],
+    quarantineKeys: [quarantineKey],
+  };
 }
 
 function defaultProfileLibraryStore(): StorybookAIProfileLibraryStore {
@@ -101,6 +221,7 @@ export function listStorybookAIProfiles(): NimiAIProfile[] {
 export function loadStorybookAIConfig(
   scopeRef: NimiAIScopeRef = createStorybookAIScopeRef(),
 ): NimiAIConfig {
+  repairStorybookAIConfigStorageForScope(scopeRef);
   try {
     return aiConfigStore.load(scopeRef);
   } catch (error) {
@@ -122,6 +243,7 @@ export function saveStorybookAIConfig(
   scopeRef: NimiAIScopeRef = createStorybookAIScopeRef(),
   options?: { readonly expectedBaseVersion?: string },
 ): NimiAIConfig {
+  repairStorybookAIConfigStorageForScope(scopeRef);
   const normalized = { ...next, scopeRef };
   const expectedBaseVersion = options?.expectedBaseVersion?.trim();
   if (expectedBaseVersion) {
@@ -163,9 +285,14 @@ export function createStorybookAIConfigService(): SharedAIConfigService {
     },
     aiProfile: {
       list: async () => [...(await surface.aiProfile.list())],
-      previewApply: (scopeRef, profileId, options) =>
-        surface.aiProfile.previewApply(scopeRef, profileId, options),
-      apply: (scopeRef, profileId, options) => surface.aiProfile.apply(scopeRef, profileId, options),
+      previewApply: (scopeRef, profileId, options) => {
+        repairStorybookAIConfigStorageForScope(scopeRef);
+        return surface.aiProfile.previewApply(scopeRef, profileId, options);
+      },
+      apply: (scopeRef, profileId, options) => {
+        repairStorybookAIConfigStorageForScope(scopeRef);
+        return surface.aiProfile.apply(scopeRef, profileId, options);
+      },
     },
   };
 }

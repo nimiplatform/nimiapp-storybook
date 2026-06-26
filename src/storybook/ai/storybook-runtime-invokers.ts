@@ -42,6 +42,7 @@ type ResolvedTextBinding = {
   model: string;
   route: 'local' | 'cloud';
   connectorId?: string;
+  readonly targetRef: NimiAIConfigTargetRef;
   params: RuntimeTextParams;
   configHash: string;
   metadata: Record<string, string>;
@@ -91,7 +92,7 @@ function targetRefModel(targetRef: NimiAIConfigTargetRef): string {
     return String(targetRef.providerModelId || '').trim();
   }
   if (targetRef.kind === 'local-runtime') {
-    return String(targetRef.profileId || targetRef.targetId || targetRef.readinessRef || '').trim();
+    return String(targetRef.profileBindingId || targetRef.readinessRef || '').trim();
   }
   return '';
 }
@@ -153,6 +154,7 @@ export function resolveStorybookTextBinding(config: NimiAIConfig = loadStorybook
     model,
     route,
     ...(connectorId ? { connectorId } : {}),
+    targetRef,
     params: extractTextParams(paramsRecord(config.capabilities.selectedParams[TEXT_BINDING_CAPABILITY])),
     configHash: evidence.configHash,
     schedulingTarget: schedulingTargetFor(TEXT_BINDING_CAPABILITY, targetRef),
@@ -239,6 +241,7 @@ export async function invokeStorybookText(
         modelId: bound.model,
         ...(bound.connectorId ? { providerId: bound.connectorId } : {}),
       },
+      targetRef: bound.targetRef,
     });
     const output = await model.generateText({
       model: model.model,

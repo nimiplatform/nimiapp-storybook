@@ -89,3 +89,16 @@ test('Storybook AI Config is SDK-backed and surfaced through Kit ModelConfig', (
   assert.match(RUNTIME_AI_SOURCE, /createNimiRuntimeAISchedulingClient/);
   assert.match(RUNTIME_AI_SOURCE, /requireStorybookRuntimeSubjectUserId/);
 });
+
+test('Storybook text Runtime model consumes v2 targetRef without retired local ids', () => {
+  const targetRefModelBody = RUNTIME_AI_SOURCE.slice(
+    RUNTIME_AI_SOURCE.indexOf('function targetRefModel'),
+    RUNTIME_AI_SOURCE.indexOf('function schedulingTargetFor'),
+  );
+  assert.match(targetRefModelBody, /profileBindingId/);
+  assert.match(targetRefModelBody, /readinessRef/);
+  assert.doesNotMatch(targetRefModelBody, /profileId/);
+  assert.doesNotMatch(targetRefModelBody, /targetId/);
+  assert.match(RUNTIME_AI_SOURCE, /readonly targetRef: NimiAIConfigTargetRef/);
+  assert.match(RUNTIME_AI_SOURCE, /targetRef: bound\.targetRef/);
+});
