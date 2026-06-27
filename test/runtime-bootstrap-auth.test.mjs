@@ -77,6 +77,17 @@ test('Storybook does not own Runtime developer-registration gate or local auth t
   assert.doesNotMatch(TAURI_MAIN_SOURCE, /oauth_commands::oauth_token_exchange/);
   assert.doesNotMatch(TAURI_MAIN_SOURCE, /runtime_bridge::runtime_bridge_start|runtime_bridge::runtime_bridge_stop|runtime_bridge::runtime_bridge_restart/);
   assert.doesNotMatch(TAURI_MAIN_SOURCE, /runtime_bridge::runtime_bridge_config_get|runtime_bridge::runtime_bridge_config_set/);
+  assert.match(TAURI_MAIN_SOURCE, /use nimi_shell_tauri::capabilities::\{oauth, runtime, session_logging\}/);
+  assert.match(TAURI_MAIN_SOURCE, /oauth::open_external_url/);
+  assert.match(TAURI_MAIN_SOURCE, /oauth::oauth_listen_for_code/);
+  assert.match(TAURI_MAIN_SOURCE, /runtime::runtime_bridge_unary/);
+  assert.match(TAURI_MAIN_SOURCE, /runtime::runtime_bridge_stream_open/);
+  assert.match(TAURI_MAIN_SOURCE, /runtime::runtime_bridge_stream_close/);
+  assert.match(TAURI_MAIN_SOURCE, /runtime::runtime_bridge_status/);
+  assert.match(TAURI_MAIN_SOURCE, /confirm_dialog/);
+  assert.match(TAURI_MAIN_SOURCE, /start_window_drag/);
+  assert.match(TAURI_MAIN_SOURCE, /focus_main_window/);
+  assert.doesNotMatch(TAURI_MAIN_SOURCE, /use nimi_shell_tauri::(?:oauth_commands|runtime_bridge|session_logging);/);
 });
 
 test('Storybook AI Config is SDK-backed and surfaced through Kit ModelConfig', () => {

@@ -1,2 +1,12 @@
 packages:
-  - '.'
+  - .
+  - ../../nimi/kit
+  - ../../nimi/sdks/typescript
+
+overrides:
+  '@nimiplatform/kit': link:../../nimi/kit
+  '@nimiplatform/sdk': link:../../nimi/sdks/typescript
+
+allowBuilds:
+  esbuild: true
+  protobufjs: true
