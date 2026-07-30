@@ -1,0 +1,78 @@
+format: nimicoding.authority/v2
+owner: team.storybook
+scope: storybook.product
+units:
+  - id: definition.storybook.product.truth-package
+    kind: definition
+    title: Storybook truth package
+    meaning: The storybook-truth-package is the canonical product authority record for each Storybook project and owns its scenario frame, source cast, Storybook Bible, adaptation brief, visual style guide, divergences, branch topology, state and ending matrix, chapters, assets, evidence bindings, derivations, projection inputs, accepted feedback, compatibility exports, and optional Realm structural imports.
+  - id: definition.storybook.product.lifecycle
+    kind: definition
+    title: Truth governance lifecycle
+    meaning: The truth governance lifecycle consists of draft, foundation-approved, and play-ready states.
+  - id: definition.storybook.product.projection-surface
+    kind: definition
+    title: Truth projection surface
+    meaning: Studio, Play, narrative context, render output, and compatibility exports are projections governed by truth refs.
+  - id: rule.storybook.product.r001
+    kind: rule
+    title: Truth package ownership
+    modality: must
+    statement: The storybook-truth-package is the canonical product authority for each Storybook project, and Studio, Play, narrative context, render output, and compatibility exports are projections governed by truth refs.
+    condition: Always.
+    failure: Reject a competing canonical authority or a listed projection that is not governed by truth refs.
+    relations:
+      - type: applies_to
+        target: definition.storybook.product.projection-surface
+      - type: applies_to
+        target: definition.storybook.product.truth-package
+  - id: rule.storybook.product.r002
+    kind: rule
+    title: App-local project scope
+    modality: must_not
+    statement: Storybook project truth, runs, transcripts, feedback memory, or prepared packages mutate Runtime memory, Realm world state, shared Nimi memory, or external engine state instead of remaining app-local and project-scoped.
+    condition: Whenever Storybook stores or updates project truth, runs, transcripts, feedback memory, or prepared packages.
+    failure: Reject the attempted mutation before any external state changes.
+    relations:
+      - type: applies_to
+        target: definition.storybook.product.truth-package
+  - id: rule.storybook.product.r003
+    kind: rule
+    title: Genre neutrality
+    modality: must_not
+    statement: Product authority narrows Storybook to galgame-only, anime-only, adult-only, prompt-only, or one-shot visual-novel semantics.
+    condition: Whenever Storybook product authority is authored or applied.
+    failure: Reject the narrowed product authority.
+    relations:
+      - type: applies_to
+        target: definition.storybook.product.truth-package
+  - id: rule.storybook.product.r004
+    kind: rule
+    title: Play promotion gate
+    modality: must
+    statement: Promotion to Play requires complete truth prerequisites and successful validation under the draft, foundation-approved, and play-ready governance lifecycle.
+    condition: Whenever a Storybook project is promoted to Play.
+    failure: Block promotion and fail closed when any truth prerequisite is missing or validation does not succeed.
+    relations:
+      - type: applies_to
+        target: definition.storybook.product.lifecycle
+  - id: rule.storybook.product.r005
+    kind: rule
+    title: No parallel truth
+    modality: must_not
+    statement: A Studio form state, Play run state, AI output, render artifact, imported document, or external package becomes a parallel canonical source without admission into the truth package with evidence or derivation.
+    condition: Whenever a claim from a projection, artifact, import, or external package is retained.
+    failure: Reject the parallel canonical source and retain no claim from it until the claim is admitted into the truth package with evidence or derivation.
+    relations:
+      - type: applies_to
+        target: definition.storybook.product.truth-package
+  - id: rule.storybook.product.r006
+    kind: rule
+    title: Structural external references
+    modality: must
+    statement: Realm and Forge alignment is structural reference only, and any imported or forked structural reference results in project truth owned by the Storybook project.
+    condition: Whenever Storybook imports or forks a Realm or Forge structural reference.
+    failure: Reject any reference or fork that assigns Storybook project truth ownership to Realm or Forge.
+    relations:
+      - type: applies_to
+        target: definition.storybook.product.truth-package

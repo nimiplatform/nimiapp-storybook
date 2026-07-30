@@ -1,0 +1,70 @@
+format: nimicoding.authority/v2
+owner: team.storybook
+scope: storybook.ia
+units:
+  - id: definition.storybook.ia.studio
+    kind: definition
+    title: Studio surface
+    meaning: Studio is the creator surface that owns source intake, foundation review, playtest, promotion, and advanced truth and governance controls.
+  - id: definition.storybook.ia.play
+    kind: definition
+    title: Play surface
+    meaning: Play is the player surface that owns reading, choice selection, run continuation, and recoverable player-facing failure states.
+  - id: definition.storybook.ia.settings
+    kind: definition
+    title: Settings surface
+    meaning: Settings is the platform and app infrastructure surface that owns auth-visible state and AI Config surfaces through Nimi Kit and SDK.
+  - id: rule.storybook.ia.r001
+    kind: rule
+    title: Primary product split
+    modality: must
+    statement: Storybook has Studio for creators and Play for ordinary play as its two primary product surfaces, while Settings remains platform and app infrastructure rather than a third product authoring surface.
+    condition: Whenever Storybook information architecture or navigation is defined.
+    failure: Reject information architecture that merges creator and player responsibilities or makes Settings a product authoring surface.
+    relations:
+      - type: applies_to
+        target: definition.storybook.ia.play
+      - type: applies_to
+        target: definition.storybook.ia.settings
+      - type: applies_to
+        target: definition.storybook.ia.studio
+  - id: rule.storybook.ia.r002
+    kind: rule
+    title: Studio responsibility
+    modality: must
+    statement: Studio owns source intake, foundation review, playtest, promotion, and advanced truth and governance controls and may expose validation failures and truth refs.
+    condition: Whenever a creator performs foundation or truth governance work.
+    failure: Reject creator workflows that assign Studio responsibilities outside Studio.
+    relations:
+      - type: applies_to
+        target: definition.storybook.ia.studio
+  - id: rule.storybook.ia.r003
+    kind: rule
+    title: Play responsibility
+    modality: must
+    statement: Play owns reading, choice selection, run continuation, and recoverable player-facing failure states and never exposes Studio authoring controls.
+    condition: Whenever an ordinary player reads or continues a Storybook run.
+    failure: Reject Studio authoring controls from Play and expose a recoverable player-facing failure when Play cannot proceed.
+    relations:
+      - type: applies_to
+        target: definition.storybook.ia.play
+  - id: rule.storybook.ia.r004
+    kind: rule
+    title: Choice-first play
+    modality: must
+    statement: Play is choice-first, and free-text input remains optional rather than a required path for ordinary progression.
+    condition: Whenever ordinary Play progression is designed or presented.
+    failure: Block an ordinary progression design that requires free-text input or is not choice-first.
+    relations:
+      - type: applies_to
+        target: definition.storybook.ia.play
+  - id: rule.storybook.ia.r005
+    kind: rule
+    title: Settings responsibility
+    modality: must
+    statement: Settings owns auth-visible state and AI Config surfaces through Nimi Kit and SDK without duplicating Runtime account truth, permission truth, or release truth.
+    condition: Whenever Settings presents authentication or AI configuration state.
+    failure: Reject duplicated account, permission, or release truth and expose infrastructure state only through Nimi Kit or SDK surfaces.
+    relations:
+      - type: applies_to
+        target: definition.storybook.ia.settings

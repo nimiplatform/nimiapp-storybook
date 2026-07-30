@@ -7,20 +7,23 @@ function read(path) {
 }
 
 test('storybook repository exposes nimicoding governance and product authority', () => {
-  assert.match(read('.nimi/config/bootstrap.yaml'), /bootstrap_contract: "nimicoding\.bootstrap"/);
-  assert.match(read('.nimi/config/skill-manifest.yaml'), /spec_reconstruction/);
+  assert.match(read('.nimi/methodology/authority-authoring.yaml'), /nimicoding\.authority\/v2/);
   assert.match(read('.nimi/config/app-identity.yaml'), /app_id: nimi\.storybook/);
   assert.match(read('.nimi/config/build-profile.yaml'), /build_command: pnpm run build/);
-  assert.match(read('.nimi/spec/INDEX.md'), /storybook/);
-  assert.match(read('.nimi/spec/storybook/kernel/product-contract.md'), /SBK-PROD-01/);
-  assert.match(read('.nimi/spec/storybook/kernel/runtime-ai-contract.md'), /SBK-AI-01/);
+  assert.match(
+    read('.nimi/spec/storybook/canonical/product.authority.yaml'),
+    /rule\.storybook\.product\.r001/,
+  );
+  assert.match(
+    read('.nimi/spec/storybook/canonical/runtime-ai.authority.yaml'),
+    /rule\.storybook\.runtime-ai\.r001/,
+  );
 });
 
-test('storybook domain admission is host-owned and not the default project placeholder', () => {
-  const admission = read('.nimi/contracts/domain-admission.schema.yaml');
-  assert.match(admission, /domain_id: storybook/);
-  assert.match(admission, /domain_root: \.nimi\/spec\/storybook/);
-  assert.doesNotMatch(admission, /domain_root: \.nimi\/spec\/project/);
+test('storybook authority is a closed v2 corpus without the legacy project placeholder', () => {
+  const product = read('.nimi/spec/storybook/canonical/product.authority.yaml');
+  assert.match(product, /format: nimicoding\.authority\/v2/);
+  assert.doesNotMatch(product, /\.nimi\/spec\/project/);
 });
 
 test('gitflow and local state boundaries match standalone app expectations', () => {

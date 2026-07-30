@@ -19,17 +19,12 @@
   },
   "managedFileTaxonomy": {
     "nimicodingPackageProjection": [
-      ".nimi/config/**",
-      ".nimi/contracts/**",
-      ".nimi/methodology/**"
+      ".nimi/methodology/authority-authoring.yaml"
     ],
     "hostOwnedProductAuthority": [
-      ".nimi/spec/storybook/kernel/**"
+      ".nimi/spec/storybook/canonical/**"
     ],
-    "hostOwnedThinGuidance": [
-      ".nimi/spec/INDEX.md",
-      ".nimi/spec/storybook/*.md"
-    ],
+    "hostOwnedThinGuidance": [],
     "scaffoldManagedGlue": [
       ".gitignore",
       "ADMISSION.md",
@@ -53,6 +48,6 @@
     "permissionGrantTruth": "platform-owned-after-review",
     "tokenCustody": "runtime-owned",
     "aiConfigOwner": "sdk-nimi-ai-config",
-    "productAuthorityRoot": ".nimi/spec/storybook/kernel"
+    "productAuthorityRoot": ".nimi/spec/storybook/canonical"
   }
 }

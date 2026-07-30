@@ -38,9 +38,8 @@ The version string lives in three places that stay in lockstep:
 pnpm install
 pnpm exec nimicoding sync --check
 pnpm nimicoding:doctor
-pnpm exec nimicoding validate-spec-tree
-pnpm exec nimicoding validate-domain-admission --profile nimi --root .nimi/spec
-pnpm exec nimicoding validate-table-family --profile nimi --root .nimi/spec
+pnpm run spec:authority:check
+pnpm run spec:authority:compile
 pnpm run check
 pnpm run build
 pnpm run validate

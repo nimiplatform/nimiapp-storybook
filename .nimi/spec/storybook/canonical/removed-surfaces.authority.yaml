@@ -1,0 +1,60 @@
+format: nimicoding.authority/v2
+owner: team.storybook
+scope: storybook.removed-surfaces
+units:
+  - id: definition.storybook.removed-surfaces.prompt-only-generator
+    kind: definition
+    title: Prompt-only generator
+    meaning: A prompt-only generator produces ungoverned prompt-to-story output without truth package authority.
+  - id: definition.storybook.removed-surfaces.app-owned-provider-console
+    kind: definition
+    title: App-owned provider console
+    meaning: An app-owned provider console is Storybook-local provider or model selection UI outside SDK and Kit AI Config.
+  - id: definition.storybook.removed-surfaces.shared-memory-writer
+    kind: definition
+    title: Shared memory writer
+    meaning: A shared memory writer mutates Runtime, Realm, or shared ecosystem memory with Storybook project data.
+  - id: definition.storybook.removed-surfaces.external-engine-runtime-dependency
+    kind: definition
+    title: External engine runtime dependency
+    meaning: An external engine runtime dependency makes Forge, Realm, or another narrative engine the owner of Storybook runtime truth.
+  - id: rule.storybook.removed-surfaces.r001
+    kind: rule
+    title: No prompt-only generator
+    modality: must_not
+    statement: A prompt-only generator produces Storybook content without truth package inputs, registered surface IDs, and Runtime AI Config.
+    condition: Whenever a Storybook generation surface is defined or invoked.
+    failure: Reject the generation result and do not admit the prompt-only generator surface.
+    relations:
+      - type: applies_to
+        target: definition.storybook.removed-surfaces.prompt-only-generator
+  - id: rule.storybook.removed-surfaces.r002
+    kind: rule
+    title: No app-owned provider console
+    modality: must_not
+    statement: Storybook product authority or UI exposes provider or model console semantics outside Kit and SDK AI Config.
+    condition: Whenever Storybook presents or governs model configuration.
+    failure: Reject the app-owned provider console and route no model configuration through it.
+    relations:
+      - type: applies_to
+        target: definition.storybook.removed-surfaces.app-owned-provider-console
+  - id: rule.storybook.removed-surfaces.r003
+    kind: rule
+    title: No shared memory mutation
+    modality: must_not
+    statement: Storybook writes project memory, transcripts, or feedback into Runtime source memory, Realm world state, or shared ecosystem memory.
+    condition: Whenever Storybook stores project memory, transcripts, or feedback.
+    failure: Reject the write before Runtime, Realm, or shared ecosystem memory changes.
+    relations:
+      - type: applies_to
+        target: definition.storybook.removed-surfaces.shared-memory-writer
+  - id: rule.storybook.removed-surfaces.r004
+    kind: rule
+    title: No external engine dependency
+    modality: must_not
+    statement: Forge, Realm, or another external narrative engine becomes a Storybook runtime dependency or owner of Storybook truth rather than only informing structure.
+    condition: Whenever Storybook integrates a structural reference from Forge, Realm, or another narrative engine.
+    failure: Reject the runtime dependency and any external ownership claim over Storybook truth.
+    relations:
+      - type: applies_to
+        target: definition.storybook.removed-surfaces.external-engine-runtime-dependency

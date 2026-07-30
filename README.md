@@ -6,8 +6,9 @@ Storybook is a Nimi App: an agentic interactive narrative product with separated
 `Play`, `Studio`, and a shared app-local `Engine`. It is genre-neutral — not a
 galgame-only, anime-only, adult-only, or one-shot visual-novel generator.
 
-`.nimi/spec/storybook/kernel/**` is the product authority. `.nimi/{config,contracts,methodology}/**`
-is the nimicoding governance projection; refresh it with `pnpm exec nimicoding sync --apply`.
+`.nimi/spec/storybook/canonical/**` is the product authority.
+`.nimi/methodology/authority-authoring.yaml` is the nimicoding-managed
+authoring guide; refresh it with `pnpm exec nimicoding sync --apply`.
 
 `nimi.app.yaml`, permission declarations, pack output, validate output, and local
 audit output are submitted inputs and pre-submission self-checks only.

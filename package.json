@@ -29,7 +29,7 @@
     "pack": "pnpm run build && node scripts/pack.mjs",
     "nimicoding": "nimicoding",
     "nimicoding:doctor": "nimicoding doctor",
-    "spec:authority:check": "nimicoding authority check .nimi/spec",
+    "spec:authority:check": "nimicoding authority check .nimi/spec --require-format nimicoding.authority/v2",
     "spec:authority:compile": "nimicoding authority compile .nimi/spec"
   },
   "dependencies": {
@@ -47,7 +47,7 @@
     "@nimiplatform/app-tools": "link:../../nimi/app-tools",
     "@nimiplatform/kit-protected-local-win32-x64": "link:../../nimi/kit/shell/protected-local-node/npm/win32-x64",
     "@eslint/js": "^10.0.1",
-    "@nimiplatform/nimi-coding": "link:../../nimi-coding",
+    "@nimiplatform/nimi-coding": "0.4.0",
     "@tailwindcss/vite": "^4.3.0",
     "@tauri-apps/cli": "^2.11.2",
     "@types/node": "^24.10.1",

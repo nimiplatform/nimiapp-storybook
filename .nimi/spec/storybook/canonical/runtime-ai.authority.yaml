@@ -1,0 +1,114 @@
+format: nimicoding.authority/v2
+owner: team.storybook
+scope: storybook.runtime-ai
+units:
+  - id: definition.storybook.runtime-ai.runtime-session
+    kind: definition
+    title: Desktop-supervised Runtime session
+    meaning: A Storybook Runtime session is a Desktop-supervised local-app session exposed through the protected standard bridge; Desktop and the protected carrier own admission, authorization, and credentials, while Storybook observes only public session posture and caller-scoped handles.
+  - id: definition.storybook.runtime-ai.ai-config
+    kind: definition
+    title: SDK AI configuration
+    meaning: SDK NimiAIConfig owns model selection surfaced through Kit model configuration UI.
+  - id: definition.storybook.runtime-ai.typed-unavailable
+    kind: definition
+    title: Typed generation unavailability
+    meaning: Typed unavailable states cover missing Runtime, missing subject user, missing AI Config binding, model resolution failure, runtime dispatch failure, and empty artifact result.
+  - id: definition.storybook.runtime-ai.surface-catalog
+    kind: definition
+    title: Generation surface catalog
+    meaning: The Storybook generation surface catalog is the registered set of Runtime generation surface IDs.
+  - id: definition.storybook.runtime-ai.surface.studio-bible
+    kind: definition
+    title: Studio Bible draft surface
+    meaning: The nimi.storybook.studio.bible surface drafts Storybook Bible text for creator review from a premise and optional style hint.
+  - id: definition.storybook.runtime-ai.surface.play-scene
+    kind: definition
+    title: Play scene surface
+    meaning: The nimi.storybook.play.scene surface generates scene prose from governed narrative context without adding conflicting hard truth.
+  - id: definition.storybook.runtime-ai.surface.play-choices
+    kind: definition
+    title: Play choice surface
+    meaning: The nimi.storybook.play.choices surface generates short default choices for choice-first play progression.
+  - id: definition.storybook.runtime-ai.surface.studio-asset
+    kind: definition
+    title: Studio asset surface
+    meaning: The nimi.storybook.studio.asset surface generates an image artifact for a governed Storybook asset specification.
+  - id: rule.storybook.runtime-ai.r001
+    kind: rule
+    title: Runtime account boundary
+    modality: must
+    statement: Storybook establishes or resumes Runtime access only through the Desktop-supervised standard bridge and does not perform App-side Runtime registration, credential custody, self-authorization, or Runtime account browser brokering.
+    condition: Whenever Storybook establishes or resumes an authenticated Runtime session.
+    failure: Reject the session attempt when the protected bridge is unavailable or any App-side registration, credential, self-authorization, or account broker path is invoked; establish no App-owned authenticated session.
+    relations:
+      - type: applies_to
+        target: definition.storybook.runtime-ai.runtime-session
+  - id: rule.storybook.runtime-ai.r002
+    kind: rule
+    title: No OAuth exchange surface
+    modality: must_not
+    statement: An app bridge exposes OAuth or token exchange, or an app-owned token exchange or local first-party auth shim authenticates Storybook.
+    condition: Whenever a Storybook authentication or app bridge surface is defined or invoked.
+    failure: Reject the exchange surface or auth shim and establish no app-owned authenticated session.
+    relations:
+      - type: applies_to
+        target: definition.storybook.runtime-ai.runtime-session
+  - id: rule.storybook.runtime-ai.r003
+    kind: rule
+    title: AI Config ownership
+    modality: must
+    statement: SDK NimiAIConfig owns AI model selection through Kit model configuration UI, while Storybook owns neither provider routing nor model truth.
+    condition: Whenever model configuration or selection is displayed, resolved, or used.
+    failure: Treat model configuration as unavailable and expose no app-local provider route when an SDK NimiAIConfig binding cannot govern selection.
+    relations:
+      - type: applies_to
+        target: definition.storybook.runtime-ai.ai-config
+  - id: rule.storybook.runtime-ai.r004
+    kind: rule
+    title: Runtime SDK dispatch
+    modality: must
+    statement: Text, image, and future media generation dispatches only through Nimi Runtime and SDK surfaces without an app-level REST bypass around the SDK.
+    condition: Whenever Storybook dispatches a generation request.
+    failure: Reject an app-level REST bypass and return typed runtime dispatch unavailability.
+    relations:
+      - type: applies_to
+        target: definition.storybook.runtime-ai.runtime-session
+  - id: rule.storybook.runtime-ai.r005
+    kind: rule
+    title: No provider hardcoding
+    modality: must_not
+    statement: Provider or model identifiers become product constants or app-local routing rules, or Runtime-returned identifiers become authority rather than provenance records.
+    condition: Whenever provider or model identifiers are configured, resolved, returned, or recorded.
+    failure: Fail configuration or dispatch validation and reject any app-local route or authority claim based on provider or model identifiers.
+    relations:
+      - type: applies_to
+        target: definition.storybook.runtime-ai.ai-config
+  - id: rule.storybook.runtime-ai.r006
+    kind: rule
+    title: Typed unavailable results
+    modality: must
+    statement: Storybook represents missing Runtime, missing subject user, missing AI Config binding, model resolution failure, runtime dispatch failure, and empty artifact result as typed unavailable states and never fabricates generated text, choices, or assets.
+    condition: Whenever any registered unavailable condition prevents a valid generated result.
+    failure: Return the corresponding typed unavailable state and emit no fabricated generated text, choices, or assets.
+    relations:
+      - type: applies_to
+        target: definition.storybook.runtime-ai.typed-unavailable
+  - id: rule.storybook.runtime-ai.r007
+    kind: rule
+    title: Registered generation surfaces
+    modality: must
+    statement: Every Runtime generation request uses a registered Storybook surface ID from the active generation surface catalog.
+    condition: Whenever Storybook creates a Runtime generation request.
+    failure: Reject the generation request when its Storybook surface ID is absent from the active catalog.
+    relations:
+      - type: applies_to
+        target: definition.storybook.runtime-ai.surface-catalog
+      - type: applies_to
+        target: definition.storybook.runtime-ai.surface.play-choices
+      - type: applies_to
+        target: definition.storybook.runtime-ai.surface.play-scene
+      - type: applies_to
+        target: definition.storybook.runtime-ai.surface.studio-asset
+      - type: applies_to
+        target: definition.storybook.runtime-ai.surface.studio-bible
