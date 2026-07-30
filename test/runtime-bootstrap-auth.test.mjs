@@ -1,107 +1,94 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import path from 'node:path';
 import test from 'node:test';
 import {
   STORYBOOK_APP_ID,
   STORYBOOK_RUNTIME_APP_ID,
-  STORYBOOK_RUNTIME_APP_INSTANCE_ID,
-  STORYBOOK_RUNTIME_DEVICE_ID,
 } from '../src/contracts/app-identity.ts';
 
-const BOOTSTRAP_SOURCE = readFileSync(
-  new URL('../src/shell/infra/storybook-bootstrap.ts', import.meta.url),
-  'utf8',
-);
-const SESSION_SOURCE = readFileSync(
-  new URL('../src/shell/infra/storybook-runtime-session.ts', import.meta.url),
-  'utf8',
-);
-const RUNTIME_AI_SOURCE = readFileSync(
-  new URL('../src/storybook/ai/storybook-runtime-invokers.ts', import.meta.url),
-  'utf8',
-);
-const AI_CONFIG_STORE_SOURCE = readFileSync(
-  new URL('../src/storybook/ai/storybook-ai-config-store.ts', import.meta.url),
-  'utf8',
-);
-const AI_CONFIG_SECTION_SOURCE = readFileSync(
-  new URL('../src/shell/ai/storybook-ai-model-config-section.tsx', import.meta.url),
-  'utf8',
-);
-const BRIDGE_SOURCE = readFileSync(
-  new URL('../src/shell/bridge/index.ts', import.meta.url),
-  'utf8',
-);
-const TAURI_MAIN_SOURCE = readFileSync(
-  new URL('../src-tauri/src/main.rs', import.meta.url),
-  'utf8',
-);
+const APP_ROOT = path.resolve(import.meta.dirname, '..');
 
-test('Storybook uses one canonical Nimi app id across manifest, Runtime, and Tauri identity', () => {
+function read(relativePath) {
+  return readFileSync(path.join(APP_ROOT, relativePath), 'utf8');
+}
+
+function sourceText(relativeRoot) {
+  const root = path.join(APP_ROOT, relativeRoot);
+  const entries = [];
+  for (const item of readdirSync(root, { withFileTypes: true })) {
+    const relative = path.join(relativeRoot, item.name);
+    if (item.isDirectory()) entries.push(sourceText(relative));
+    else if (/\.(?:cts|ts|tsx)$/u.test(item.name)) entries.push(read(relative));
+  }
+  return entries.join('\n');
+}
+
+const PACKAGE = JSON.parse(read('package.json'));
+const MANIFEST = read('nimi.app.yaml');
+const ELECTRON_MAIN = read('src-electron/main.ts');
+const ELECTRON_PRELOAD = read('src-electron/preload.cts');
+const BOOTSTRAP_SOURCE = read('src/shell/infra/storybook-bootstrap.ts');
+const CLIENT_SOURCE = read('src/shell/infra/storybook-nimi-client.ts');
+const AUTH_GATE_SOURCE = read('src/shell/app-shell/auth-provider.tsx');
+const RUNTIME_PLATFORM_SOURCE = read('src/shell/auth/runtime-platform.ts');
+const RUNTIME_AI_SOURCE = read('src/storybook/ai/storybook-runtime-invokers.ts');
+const ALL_ACTIVE_SOURCE = `${sourceText('src')}\n${sourceText('src-electron')}`;
+
+test('Storybook uses one canonical app id across manifest and supervised Electron host', () => {
   assert.equal(STORYBOOK_APP_ID, 'nimi.storybook');
-  assert.equal(STORYBOOK_RUNTIME_APP_ID, 'nimi.storybook');
-  assert.equal(STORYBOOK_RUNTIME_APP_INSTANCE_ID, 'nimi.storybook.local-developer');
-  assert.equal(STORYBOOK_RUNTIME_DEVICE_ID, 'storybook-local-developer-device');
   assert.equal(STORYBOOK_RUNTIME_APP_ID, STORYBOOK_APP_ID);
+  assert.match(MANIFEST, /^app_id: nimi\.storybook$/m);
+  assert.match(ELECTRON_MAIN, /const STORYBOOK_APP_ID = 'nimi\.storybook'/);
 });
 
-test('Storybook Nimi client uses developer-registered Runtime session without raw Realm tokens', () => {
-  assert.match(BOOTSTRAP_SOURCE, /configureStorybookRuntimeSession/);
-  assert.doesNotMatch(BOOTSTRAP_SOURCE, /syncStorybookRuntimeDeveloperRegistrationConfig/);
-  assert.match(SESSION_SOURCE, /createNimiClient/);
-  assert.match(SESSION_SOURCE, /createNimiDeveloperRegisteredRuntimeAccountCaller/);
-  assert.doesNotMatch(SESSION_SOURCE, /createRealmFetchTransport/);
-  assert.doesNotMatch(SESSION_SOURCE, /getAccessToken/);
-  assert.match(SESSION_SOURCE, /createNimiRuntimeAppSessionMetadataProvider/);
-  assert.match(SESSION_SOURCE, /authorizeExternalPrincipal/);
-  assert.match(SESSION_SOURCE, /protectedAccessInflight\.subjectUserId !== subjectUserId/);
-  assert.match(SESSION_SOURCE, /protectedAccessInflight === inflight/);
-  assert.match(SESSION_SOURCE, /realm:\s*false/);
-  assert.match(SESSION_SOURCE, /app:\s*false/);
-  assert.match(SESSION_SOURCE, /permissions:\s*false/);
-  assert.match(SESSION_SOURCE, /type:\s*'tauri-ipc'/);
-  assert.match(SESSION_SOURCE, /commandNamespace:\s*'runtime_bridge'/);
-  assert.match(SESSION_SOURCE, /eventNamespace:\s*'runtime_bridge'/);
-  assert.match(SESSION_SOURCE, /appId:\s*STORYBOOK_RUNTIME_APP_ID/);
-  assert.match(SESSION_SOURCE, /externalPrincipalId:\s*STORYBOOK_RUNTIME_APP_ID/);
-  assert.match(RUNTIME_AI_SOURCE, /appId:\s*STORYBOOK_RUNTIME_APP_ID/);
+test('official development path is Desktop-supervised Electron with no app-owned CDP', () => {
+  assert.equal(PACKAGE.scripts.dev, 'nimi-app dev --shell electron');
+  assert.equal(PACKAGE.scripts['dev:shell'], 'nimi-app dev');
+  assert.equal(PACKAGE.scripts['dev:electron'], 'nimi-app dev --shell electron');
+  assert.match(MANIFEST, /^permissions: \[\]$/m);
+  assert.match(MANIFEST, /local_development:\s*\n  electron:\s*\n    renderer_origin: http:\/\/127\.0\.0\.1:1473/m);
+  assert.match(ELECTRON_MAIN, /registerNimiElectronAppBridge/);
+  assert.match(ELECTRON_MAIN, /onProtectedSessionFailure: \(\) => app\.quit\(\)/);
+  assert.match(ELECTRON_PRELOAD, /installNimiElectronRuntimeBridge/);
+  assert.doesNotMatch(ELECTRON_MAIN, /remote-debugging|CDP|cdp/i);
 });
 
-test('Storybook does not own Runtime developer-registration gate or local auth token storage', () => {
-  assert.doesNotMatch(BOOTSTRAP_SOURCE, /setDaemonConfig|restartDaemon|mergeNimiRuntimeBridgeDeveloperRegistrationConfig/);
-  assert.doesNotMatch(SESSION_SOURCE, /createNimiLocalFirstPartyRuntimeAccountCaller|LOCAL_FIRST_PARTY_APP/);
-  assert.doesNotMatch(TAURI_MAIN_SOURCE, /auth_session_commands|auth_session_load|auth_session_save|auth_session_clear/);
-  assert.doesNotMatch(BRIDGE_SOURCE, /startDaemon|stopDaemon|restartDaemon|getDaemonConfig|setDaemonConfig|RuntimeBridgeConfigSetResult/);
-  assert.doesNotMatch(BRIDGE_SOURCE, /createTauriOAuthBridge/);
-  assert.match(BRIDGE_SOURCE, /STORYBOOK_TOKEN_EXCHANGE_FORBIDDEN/);
-  assert.doesNotMatch(TAURI_MAIN_SOURCE, /oauth_commands::oauth_token_exchange/);
-  assert.doesNotMatch(TAURI_MAIN_SOURCE, /runtime_bridge::runtime_bridge_start|runtime_bridge::runtime_bridge_stop|runtime_bridge::runtime_bridge_restart/);
-  assert.doesNotMatch(TAURI_MAIN_SOURCE, /runtime_bridge::runtime_bridge_config_get|runtime_bridge::runtime_bridge_config_set/);
-  assert.match(TAURI_MAIN_SOURCE, /use nimi_shell_tauri::capabilities::\{oauth, runtime, session_logging\}/);
-  assert.match(TAURI_MAIN_SOURCE, /oauth::open_external_url/);
-  assert.match(TAURI_MAIN_SOURCE, /oauth::oauth_listen_for_code/);
-  assert.match(TAURI_MAIN_SOURCE, /runtime::runtime_bridge_unary/);
-  assert.match(TAURI_MAIN_SOURCE, /runtime::runtime_bridge_stream_open/);
-  assert.match(TAURI_MAIN_SOURCE, /runtime::runtime_bridge_stream_close/);
-  assert.match(TAURI_MAIN_SOURCE, /runtime::runtime_bridge_status/);
-  assert.match(TAURI_MAIN_SOURCE, /confirm_dialog/);
-  assert.match(TAURI_MAIN_SOURCE, /start_window_drag/);
-  assert.match(TAURI_MAIN_SOURCE, /focus_main_window/);
-  assert.doesNotMatch(TAURI_MAIN_SOURCE, /use nimi_shell_tauri::(?:oauth_commands|runtime_bridge|session_logging);/);
+test('bootstrap consumes only public local-app session posture', () => {
+  assert.match(CLIENT_SOURCE, /createNimiLocalAppStandardShellSurface/);
+  assert.match(CLIENT_SOURCE, /createNimiClient\(\{\s*localApp:/);
+  assert.match(BOOTSTRAP_SOURCE, /getStorybookNimiClient\(\)\.auth\.status\(\)/);
+  assert.match(BOOTSTRAP_SOURCE, /session\.sessionBound/);
+  assert.match(AUTH_GATE_SOURCE, /Desktop-supervised standard bridge/);
+  assert.match(AUTH_GATE_SOURCE, /不提供自登录或自授权入口/);
+  assert.match(RUNTIME_PLATFORM_SOURCE, /desktop-supervised-local-app/);
+  assert.equal(existsSync(path.join(APP_ROOT, 'src/shell/infra/storybook-runtime-session.ts')), false);
+  assert.equal(existsSync(path.join(APP_ROOT, 'src/shell/features/auth/storybook-auth-adapter.ts')), false);
+  assert.equal(existsSync(path.join(APP_ROOT, 'src/shell/features/auth/storybook-login-page.tsx')), false);
 });
 
-test('Storybook AI Config is SDK-backed and surfaced through Kit ModelConfig', () => {
-  assert.match(AI_CONFIG_STORE_SOURCE, /createNimiAIConfigStore/);
-  assert.match(AI_CONFIG_STORE_SOURCE, /createNimiAIHostSurface/);
-  assert.match(AI_CONFIG_STORE_SOURCE, /createNimiAIConfigSubscriptionRegistry/);
-  assert.match(AI_CONFIG_SECTION_SOURCE, /ModelConfigAiModelHub/);
-  assert.match(AI_CONFIG_SECTION_SOURCE, /createStorybookRuntimeModelPickerProviderCache/);
-  assert.match(RUNTIME_AI_SOURCE, /createNimiRuntimeAIModel/);
-  assert.match(RUNTIME_AI_SOURCE, /createNimiRuntimeAISchedulingClient/);
-  assert.match(RUNTIME_AI_SOURCE, /requireStorybookRuntimeSubjectUserId/);
+test('active source contains no app registration, credential custody, self-authorization, or account broker', () => {
+  for (const retired of [
+    /createNimiDeveloperRegisteredRuntimeAccountCaller/,
+    /createNimiRuntimeFullAppRegistration/,
+    /createNimiRuntimeAppSessionMetadataProvider/,
+    /authorizeExternalPrincipal/,
+    /x-nimi-access-token/i,
+    /token\.secret/,
+    /RuntimeAccountBrowserBroker/,
+    /DesktopShellAuthPage/,
+  ]) {
+    assert.doesNotMatch(ALL_ACTIVE_SOURCE, retired);
+  }
 });
 
-test('Storybook text Runtime model consumes v2 targetRef without retired local ids', () => {
+test('generic generation remains typed unavailable until admitted on the standard bridge', () => {
+  assert.match(RUNTIME_PLATFORM_SOURCE, /storybook-generic-runtime-generation-not-admitted/);
+  assert.match(RUNTIME_PLATFORM_SOURCE, /admit_public_local_app_generation_contract/);
+  assert.doesNotMatch(RUNTIME_AI_SOURCE, /requireStorybookRuntimeSubjectUserId/);
+});
+
+test('Storybook text binding parser consumes v2 targetRef without retired local ids', () => {
   const targetRefModelBody = RUNTIME_AI_SOURCE.slice(
     RUNTIME_AI_SOURCE.indexOf('function targetRefModel'),
     RUNTIME_AI_SOURCE.indexOf('function schedulingTargetFor'),
@@ -110,6 +97,4 @@ test('Storybook text Runtime model consumes v2 targetRef without retired local i
   assert.match(targetRefModelBody, /readinessRef/);
   assert.doesNotMatch(targetRefModelBody, /profileId/);
   assert.doesNotMatch(targetRefModelBody, /targetId/);
-  assert.match(RUNTIME_AI_SOURCE, /readonly targetRef: NimiAIConfigTargetRef/);
-  assert.match(RUNTIME_AI_SOURCE, /targetRef: bound\.targetRef/);
 });

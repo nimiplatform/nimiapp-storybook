@@ -129,7 +129,9 @@ function storedAIConfigInvalidReason(raw: string, scopeRef: NimiAIScopeRef): str
   }
   const validation = validateNimiAIConfig(parsed);
   if (!validation.valid) {
-    return validation.errors.join('; ');
+    return validation.issues
+      .map((issue) => `${issue.code}@${issue.path}`)
+      .join('; ');
   }
   const config = parsed as NimiAIConfig;
   if (!areNimiAIScopeRefsEqual(config.scopeRef, scopeRef)) {
@@ -254,7 +256,10 @@ export function saveStorybookAIConfig(
   }
   const validation = validateNimiAIConfig(normalized);
   if (!validation.valid) {
-    throw new Error(`AIConfig validation failed: ${validation.errors.join('; ')}`);
+    const detail = validation.issues
+      .map((issue) => `${issue.code}@${issue.path}`)
+      .join('; ');
+    throw new Error(`AIConfig validation failed: ${detail}`);
   }
   const saved = aiConfigStore.save(normalized);
   configSubscriptions.notify(saved);

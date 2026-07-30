@@ -1,5 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { OfflineCoordinator, type OfflineTier } from '@nimiplatform/kit/core/offline-coordinator';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   Button,
   InlineAlert,
@@ -7,62 +6,35 @@ import {
   Surface,
 } from '@nimiplatform/kit/ui';
 import { useAppStore } from './app-store.js';
-
-const storybookAuthGateOfflineCoordinator = new OfflineCoordinator();
-
-const StorybookLoginPage = lazy(() =>
-  import('../features/auth/storybook-login-page.js').then((module) => ({
-    default: module.StorybookLoginPage,
-  })),
-);
-
-let storybookBootstrapModulePromise:
-  | Promise<typeof import('../infra/storybook-bootstrap.js')>
-  | null = null;
-
-function loadStorybookBootstrapModule(): Promise<typeof import('../infra/storybook-bootstrap.js')> {
-  storybookBootstrapModulePromise ??= import('../infra/storybook-bootstrap.js');
-  return storybookBootstrapModulePromise;
-}
-
-async function runStorybookBootstrap(options?: { readonly force?: boolean }): Promise<void> {
-  const bootstrap = await loadStorybookBootstrapModule();
-  await bootstrap.runStorybookBootstrap(options);
-}
+import { runStorybookBootstrap } from '../infra/storybook-bootstrap.js';
 
 type AuthGateState =
   | { kind: 'checking' }
-  | { kind: 'blocked'; message: string; offlineTier: OfflineTier }
-  | { kind: 'login-required' }
+  | { kind: 'blocked'; message: string }
+  | { kind: 'action-required'; reasonCode: string; actionHint: string }
   | { kind: 'ready' };
 
 function resolveAuthGateState(input: {
-  authStatus: ReturnType<typeof useAppStore.getState>['auth']['status'];
+  auth: ReturnType<typeof useAppStore.getState>['auth'];
   bootstrapReady: boolean;
   bootstrapError: string | null;
 }): AuthGateState {
-  if (input.bootstrapError) {
-    storybookAuthGateOfflineCoordinator.markRuntimeReachable(false);
+  if (input.bootstrapError) return { kind: 'blocked', message: input.bootstrapError };
+  if (!input.bootstrapReady || input.auth.status === 'bootstrapping') return { kind: 'checking' };
+  if (input.auth.status === 'unauthenticated') {
     return {
-      kind: 'blocked',
-      message: input.bootstrapError,
-      offlineTier: storybookAuthGateOfflineCoordinator.getTier(),
+      kind: 'action-required',
+      reasonCode: input.auth.reasonCode,
+      actionHint: input.auth.actionHint,
     };
-  }
-  if (!input.bootstrapReady || input.authStatus === 'bootstrapping') {
-    return { kind: 'checking' };
-  }
-  storybookAuthGateOfflineCoordinator.markRuntimeReachable(true);
-  if (input.authStatus === 'unauthenticated') {
-    return { kind: 'login-required' };
   }
   return { kind: 'ready' };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const authStatus = useAppStore((s) => s.auth.status);
-  const bootstrapReady = useAppStore((s) => s.bootstrapReady);
-  const bootstrapError = useAppStore((s) => s.bootstrapError);
+  const auth = useAppStore((state) => state.auth);
+  const bootstrapReady = useAppStore((state) => state.bootstrapReady);
+  const bootstrapError = useAppStore((state) => state.bootstrapError);
   const [retrying, setRetrying] = useState(false);
 
   useEffect(() => {
@@ -70,8 +42,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const gateState = useMemo(
-    () => resolveAuthGateState({ authStatus, bootstrapReady, bootstrapError }),
-    [authStatus, bootstrapError, bootstrapReady],
+    () => resolveAuthGateState({ auth, bootstrapReady, bootstrapError }),
+    [auth, bootstrapError, bootstrapReady],
   );
 
   const retry = useCallback(() => {
@@ -79,17 +51,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     store.setBootstrapError(null);
     store.setBootstrapReady(false);
     setRetrying(true);
-    void runStorybookBootstrap({ force: true }).finally(() => {
-      setRetrying(false);
-    });
+    void runStorybookBootstrap({ force: true }).finally(() => setRetrying(false));
   }, []);
 
   if (gateState.kind === 'blocked') {
     return (
       <AuthGateScreen
-        badge={<StatusBadge tone="danger" shape="dot">Runtime blocked · {gateState.offlineTier}</StatusBadge>}
-        title="Runtime 不可用"
-        detail="Storybook 通过 Nimi Runtime / SDK 取得账号、AI 路由和授权。Runtime 未就绪时产品表面不会挂载。"
+        badge={<StatusBadge tone="danger" shape="dot">Session blocked</StatusBadge>}
+        title="Desktop 会话不可用"
+        detail="Storybook 仅通过 Desktop-supervised standard bridge 使用 Nimi 平台会话。"
       >
         <InlineAlert tone="danger">{gateState.message}</InlineAlert>
         <Button tone="primary" onClick={retry} loading={retrying}>重试</Button>
@@ -100,9 +70,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   if (gateState.kind === 'checking') {
     return (
       <AuthGateScreen
-        badge={<StatusBadge tone="neutral" shape="dot">Runtime check</StatusBadge>}
-        title="连接 Runtime"
-        detail="正在建立 developer-registered Runtime session，并校验当前账号投影。"
+        badge={<StatusBadge tone="neutral" shape="dot">Session check</StatusBadge>}
+        title="连接 Desktop"
+        detail="正在校验由 Desktop supervisor 建立的本地 App 会话。"
       >
         <div className="flex items-center gap-3 text-sm text-[var(--nimi-text-secondary)]" role="status">
           <span
@@ -115,27 +85,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  if (gateState.kind === 'login-required') {
+  if (gateState.kind === 'action-required') {
     return (
-      <Suspense
-        fallback={
-          <AuthGateScreen
-            badge={<StatusBadge tone="neutral" shape="dot">Login</StatusBadge>}
-            title="加载登录"
-            detail="正在打开 Runtime account browser broker。"
-          >
-            <div className="flex items-center gap-3 text-sm text-[var(--nimi-text-secondary)]" role="status">
-              <span
-                aria-hidden="true"
-                className="inline-block h-4 w-4 rounded-full border-2 border-[var(--nimi-border-strong)] border-r-transparent animate-spin"
-              />
-              <span>加载中</span>
-            </div>
-          </AuthGateScreen>
-        }
+      <AuthGateScreen
+        badge={<StatusBadge tone="warning" shape="dot">Desktop action required</StatusBadge>}
+        title="请从 Nimi Desktop 启动 Storybook"
+        detail="账号登录、项目准入和会话续期均由 Desktop 管理；Storybook 不提供自登录或自授权入口。"
       >
-        <StorybookLoginPage />
-      </Suspense>
+        <InlineAlert tone="warning">
+          {gateState.reasonCode} · {gateState.actionHint}
+        </InlineAlert>
+        <Button tone="primary" onClick={retry} loading={retrying}>重新检查</Button>
+      </AuthGateScreen>
     );
   }
 

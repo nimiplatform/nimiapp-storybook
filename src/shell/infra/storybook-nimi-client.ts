@@ -1,18 +1,18 @@
-import type { NimiClient } from '@nimiplatform/sdk';
+import {
+  createNimiClient,
+  type NimiLocalAppClient,
+} from '@nimiplatform/sdk';
+import {
+  createNimiLocalAppStandardShellSurface,
+} from '@nimiplatform/kit/shell/renderer/bridge';
 
-let storybookClient: NimiClient | null = null;
+let storybookClient: NimiLocalAppClient | null = null;
 
-export function setStorybookNimiClient(client: NimiClient | null): void {
-  storybookClient = client;
-}
-
-export function hasStorybookNimiClient(): boolean {
-  return storybookClient !== null;
-}
-
-export function getStorybookNimiClient(): NimiClient {
-  if (!storybookClient) {
-    throw new Error('Storybook Nimi client is not initialized. Run bootstrap before using Runtime surfaces.');
-  }
+export function getStorybookNimiClient(): NimiLocalAppClient {
+  storybookClient ??= createNimiClient({
+    localApp: {
+      standardShell: createNimiLocalAppStandardShellSurface(),
+    },
+  });
   return storybookClient;
 }

@@ -1,4 +1,7 @@
-import { hasTauriRuntime, invokeTauri } from '../bridge/index.js';
+import {
+  hasTauriRuntime,
+  invokeTauri,
+} from '@nimiplatform/kit/shell/renderer/bridge';
 
 export type StorybookRendererLogLevel = 'debug' | 'info' | 'warn' | 'error';
 

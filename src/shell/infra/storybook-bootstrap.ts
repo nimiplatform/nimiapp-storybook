@@ -1,30 +1,11 @@
-import { getStorybookRuntimeDefaults } from '../bridge/index.js';
 import { useAppStore } from '../app-shell/app-store.js';
-import { ensureStorybookAIConfigFromFirstLaunchProfile } from '../ai/storybook-ai-config-bootstrap.ts';
 import { describeError, logRendererEvent } from './renderer-log.js';
-import { hasStorybookNimiClient, setStorybookNimiClient } from './storybook-nimi-client.js';
-import {
-  STORYBOOK_RUNTIME_APP_ID,
-  STORYBOOK_RUNTIME_APP_INSTANCE_ID,
-  STORYBOOK_RUNTIME_DEVICE_ID,
-  clearStorybookRuntimeSession,
-  configureStorybookRuntimeSession,
-  loadStorybookRuntimeAccountUser,
-  logoutStorybookRuntimeAccount as logoutCurrentStorybookRuntimeAccount,
-  storybookRuntimeAccountCaller,
-  type StorybookAuthUser,
-} from './storybook-runtime-session.ts';
+import { getStorybookNimiClient } from './storybook-nimi-client.js';
+import { STORYBOOK_APP_ID } from '../../contracts/app-identity.ts';
 
 let bootstrapPromise: Promise<void> | null = null;
 
-export {
-  STORYBOOK_RUNTIME_APP_ID,
-  STORYBOOK_RUNTIME_APP_INSTANCE_ID,
-  STORYBOOK_RUNTIME_DEVICE_ID,
-  loadStorybookRuntimeAccountUser,
-  storybookRuntimeAccountCaller,
-  type StorybookAuthUser,
-};
+export const STORYBOOK_RUNTIME_APP_ID = STORYBOOK_APP_ID;
 
 export async function runStorybookBootstrap(options: { force?: boolean } = {}): Promise<void> {
   if (bootstrapPromise && !options.force) return bootstrapPromise;
@@ -45,12 +26,15 @@ export async function ensureStorybookBootstrapReady(): Promise<void> {
   }
 }
 
-export async function ensureStorybookRuntimeClientReady(): Promise<void> {
+export async function ensureStorybookSessionBound(): Promise<void> {
   await ensureStorybookBootstrapReady();
-  if (hasStorybookNimiClient()) return;
-  await runStorybookBootstrap({ force: true });
-  if (!hasStorybookNimiClient()) {
-    throw new Error('Storybook Nimi client is unavailable after bootstrap retry');
+  const auth = useAppStore.getState().auth;
+  if (auth.status !== 'authenticated') {
+    throw Object.assign(new Error('Storybook requires a Desktop-supervised local-app session.'), {
+      reasonCode: auth.reasonCode,
+      actionHint: auth.actionHint,
+      source: 'sdk',
+    });
   }
 }
 
@@ -59,52 +43,25 @@ async function doRunStorybookBootstrap(): Promise<void> {
   const flowId = `storybook-bootstrap-${Date.now().toString(36)}`;
 
   try {
-    const runtimeDefaults = await getStorybookRuntimeDefaults();
-    store.setRuntimeDefaults(runtimeDefaults);
-
-    setStorybookNimiClient(null);
-    clearStorybookRuntimeSession();
-    const session = await configureStorybookRuntimeSession();
-    setStorybookNimiClient(session.client);
-
-    const runtimeAccountUser = await loadStorybookRuntimeAccountUser(session.accountRuntime)
-      .catch((error) => {
-        logRendererEvent({
-          level: 'warn',
-          area: 'storybook-bootstrap.account',
-          message: 'action:runtime-account-projection-unavailable',
-          flowId,
-          details: { error: describeError(error) },
-        });
-        return null;
-      });
-    if (runtimeAccountUser) {
-      store.setAuthSession(runtimeAccountUser);
+    const session = await getStorybookNimiClient().auth.status();
+    if (session.sessionBound) {
+      store.setAuthSession();
     } else {
-      store.clearAuthSession();
-    }
-
-    await session.runtime.ready();
-
-    const aiConfigInit = await ensureStorybookAIConfigFromFirstLaunchProfile();
-    if (aiConfigInit.outcome === 'setup-required') {
       logRendererEvent({
         level: 'warn',
-        area: 'storybook-bootstrap.ai-config',
-        message: 'action:first-launch-ai-config-setup-required',
+        area: 'storybook-bootstrap.session',
+        message: 'action:desktop-supervised-session-required',
         flowId,
         details: {
-          reason: aiConfigInit.reason,
-          detail: aiConfigInit.detail,
+          reasonCode: session.reasonCode,
+          actionHint: session.actionHint,
         },
       });
+      store.clearAuthSession(session.reasonCode, session.actionHint);
     }
-
     store.setBootstrapReady(true);
     store.setBootstrapError(null);
   } catch (error) {
-    setStorybookNimiClient(null);
-    clearStorybookRuntimeSession();
     const message = error instanceof Error ? error.message : String(error);
     logRendererEvent({
       level: 'error',
@@ -116,9 +73,4 @@ async function doRunStorybookBootstrap(): Promise<void> {
     store.setBootstrapError(message);
     store.setBootstrapReady(false);
   }
-}
-
-export async function logoutStorybookRuntimeAccount(): Promise<void> {
-  await ensureStorybookRuntimeClientReady();
-  await logoutCurrentStorybookRuntimeAccount();
 }

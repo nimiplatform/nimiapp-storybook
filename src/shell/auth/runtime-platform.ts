@@ -1,17 +1,19 @@
 import type { NimiClient } from '@nimiplatform/sdk';
-import { ReasonCode } from '@nimiplatform/sdk/types';
 import { STORYBOOK_APP_ID } from '../../contracts/app-identity.ts';
 import { useAppStore } from '../app-shell/app-store.ts';
-import { getStorybookNimiClient } from '../infra/storybook-nimi-client.ts';
-import { storybookRuntimeAccountCaller } from '../infra/storybook-runtime-session.ts';
 
 export const appId = STORYBOOK_APP_ID;
 export const appTitle = 'Storybook';
 export const scaffoldProfile = 'workspace-app' as const;
-export const runtimeAccountLoginEnabled = true;
+export const runtimeAccountLoginEnabled = false;
 
-export type StorybookRuntimeAuthMode = 'developer-registered-runtime-app';
+export type StorybookRuntimeAuthMode = 'desktop-supervised-local-app';
 
+/**
+ * Retained only as the input type for the typed generation boundary. The
+ * Desktop-supervised local-app carrier does not materialize this client until
+ * a public generic-generation contract is admitted.
+ */
 export type StorybookRuntimePlatformClient = Pick<NimiClient, 'appId' | 'runtime' | 'ai' | 'features'>;
 
 export type StorybookRuntimeAuthUnavailable = {
@@ -29,53 +31,31 @@ export type StorybookRuntimePlatformProjection =
       client: StorybookRuntimePlatformClient;
       auth: {
         state: 'ready';
-        source: 'runtime-developer-registered-app-session';
+        source: 'desktop-supervised-standard-bridge';
       };
     }
   | StorybookRuntimeAuthUnavailable;
 
 export function clearRuntimePlatformProjection(): void {
-  // Projection state is owned by storybook-bootstrap and the Runtime session.
-}
-
-export function getRuntimeAccountCaller() {
-  return storybookRuntimeAccountCaller;
+  // Session posture is projected by the standard local-app carrier.
 }
 
 export async function getRuntimePlatformProjection(): Promise<StorybookRuntimePlatformProjection> {
   const state = useAppStore.getState();
-  if (!state.bootstrapReady) {
-    return unavailable({
-      status: state.bootstrapError ? 'action-required' : 'unavailable',
-      mode: 'developer-registered-runtime-app',
-      reasonCode: state.bootstrapError
-        ? ReasonCode.SDK_PLATFORM_CLIENT_NOT_READY
-        : ReasonCode.SDK_RUNTIME_METHOD_UNAVAILABLE,
-      actionHint: 'complete_storybook_runtime_bootstrap',
-      message: state.bootstrapError || 'Storybook Runtime bootstrap is not ready.',
-    });
-  }
-  try {
+  if (!state.bootstrapReady || state.auth.status !== 'authenticated') {
     return {
-      status: 'ready',
-      mode: 'developer-registered-runtime-app',
-      client: getStorybookNimiClient(),
-      auth: {
-        state: 'ready',
-        source: 'runtime-developer-registered-app-session',
-      },
-    };
-  } catch (error) {
-    return unavailable({
       status: 'action-required',
-      mode: 'developer-registered-runtime-app',
-      reasonCode: ReasonCode.SDK_PLATFORM_CLIENT_NOT_READY,
-      actionHint: 'run_storybook_bootstrap',
-      message: error instanceof Error ? error.message : String(error),
-    });
+      mode: 'desktop-supervised-local-app',
+      reasonCode: state.auth.reasonCode,
+      actionHint: state.auth.actionHint,
+      message: state.bootstrapError || 'Storybook Desktop-supervised local-app session is not ready.',
+    };
   }
-}
-
-function unavailable(input: StorybookRuntimeAuthUnavailable): StorybookRuntimeAuthUnavailable {
-  return input;
+  return {
+    status: 'unavailable',
+    mode: 'desktop-supervised-local-app',
+    reasonCode: 'storybook-generic-runtime-generation-not-admitted',
+    actionHint: 'admit_public_local_app_generation_contract',
+    message: 'Storybook generic Runtime generation is not admitted on the Desktop-supervised standard bridge.',
+  };
 }

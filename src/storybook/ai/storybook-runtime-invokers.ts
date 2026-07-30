@@ -22,7 +22,6 @@ import {
 import { createNimiImageGenerationScenario } from '@nimiplatform/sdk/features/generation';
 import { STORYBOOK_RUNTIME_APP_ID } from '../../contracts/app-identity.ts';
 import type { StorybookRuntimePlatformClient } from '../../shell/auth/runtime-platform.js';
-import { requireStorybookRuntimeSubjectUserId } from '../../shell/infra/storybook-runtime-session.ts';
 import { STORYBOOK_TEXT_GENERATE_CAPABILITY_ID } from '../../shell/ai/storybook-ai-requirements.ts';
 import { loadStorybookAIConfig } from './storybook-ai-config-store.js';
 import { storybookAIUnavailable, type StorybookAIUnavailable, type StorybookAIUnavailableReason } from './storybook-unavailable.js';
@@ -229,13 +228,11 @@ export async function invokeStorybookText(
     if ('failure' in scheduling) {
       return storybookAIUnavailable('text.generate', 'runtime-call-failed', scheduling.failure);
     }
-    const subjectUserId = await requireStorybookRuntimeSubjectUserId();
     const model = createNimiRuntimeAIModel({
       runtime: client.runtime,
       appId: STORYBOOK_RUNTIME_APP_ID,
       routePolicy: bound.route,
       connectorId: bound.connectorId,
-      subjectUserId,
       timeoutMs: bound.params.timeoutMs,
       model: {
         modelId: bound.model,

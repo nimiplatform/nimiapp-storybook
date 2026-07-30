@@ -60,6 +60,9 @@ test('Storybook AIConfig repair quarantines persisted refs missing remoteModelCa
   assert.equal(result.quarantineKeys.length, 1);
   assert.match(result.quarantineKeys[0], new RegExp(`^${STORYBOOK_AI_CONFIG_QUARANTINE_PREFIX}`));
   const quarantine = JSON.parse(storage.getItem(result.quarantineKeys[0]));
-  assert.match(quarantine.reason, /remoteModelCatalogId is required/);
+  assert.match(
+    quarantine.reason,
+    /AI_FIELD_REQUIRED@config\.capabilities\.targetRefs\.text\.generate\.remoteModelCatalogId/,
+  );
   assert.equal(quarantine.raw, raw);
 });

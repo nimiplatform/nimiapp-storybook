@@ -7,11 +7,8 @@ import './shell/auth/auth-i18n.js';
 import { App } from './shell/App.js';
 import { installStorybookGlobalErrorLogging } from './shell/infra/renderer-log.js';
 
-// Platform bootstrap (Kit-owned): install the scoped runtime-transport bridge
-// (invoke + event listen) before any runtime/platform client is constructed, so
-// SDK streaming (chat.stream) can subscribe to bridge events. No-op outside the
-// Tauri webview. The app does not know the hook details — that contract lives in
-// @nimiplatform/kit.
+// Platform bootstrap (Kit-owned): install the Desktop-supervised standard
+// bridge before the local-app client reads its public session posture.
 installStorybookGlobalErrorLogging();
 installNimiShellRuntimeBridge();
 

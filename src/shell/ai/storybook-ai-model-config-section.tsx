@@ -79,6 +79,11 @@ function useLiveAIConfig(service: SharedAIConfigService, scopeRef: NimiAIScopeRe
 export function StorybookAiModelConfigSection() {
   const bootstrapReady = useAppStore((state) => state.bootstrapReady);
   const bootstrapError = useAppStore((state) => state.bootstrapError);
+  const runtimeGenerationReady = false;
+  const runtimeGenerationDetail = bootstrapError
+    || (bootstrapReady
+      ? 'Desktop-supervised standard bridge 尚未准入 Storybook generic generation。'
+      : 'Storybook Desktop-supervised session 尚未建立。');
   const service = useMemo(() => createStorybookAIConfigService(), []);
   const scopeRef = useMemo(() => createStorybookAIScopeRef(), []);
   const config = useLiveAIConfig(service, scopeRef);
@@ -93,12 +98,26 @@ export function StorybookAiModelConfigSection() {
     aiConfigService: service,
     requirementDeclaration,
     enabledCapabilities: [STORYBOOK_TEXT_GENERATE_CAPABILITY_ID],
-    providerResolver: (capabilityId: string) => (bootstrapReady ? providerCache(capabilityId) : null),
-    projectionResolver: () => bindingStatus(config, bootstrapReady, bootstrapError),
-    runtimeReady: bootstrapReady,
-    runtimeNotReadyLabel: bootstrapError || 'Runtime 未就绪',
+    providerResolver: (capabilityId: string) => (
+      runtimeGenerationReady ? providerCache(capabilityId) : null
+    ),
+    projectionResolver: () => bindingStatus(
+      config,
+      runtimeGenerationReady,
+      runtimeGenerationDetail,
+    ),
+    runtimeReady: runtimeGenerationReady,
+    runtimeNotReadyLabel: runtimeGenerationDetail,
     i18n: { t: translateStorybookModelConfig },
-  }), [bootstrapError, bootstrapReady, config, providerCache, requirementDeclaration, scopeRef, service]);
+  }), [
+    config,
+    providerCache,
+    requirementDeclaration,
+    runtimeGenerationDetail,
+    runtimeGenerationReady,
+    scopeRef,
+    service,
+  ]);
 
   const profileCopy = useMemo(
     () => defaultModelConfigProfileCopy(translateStorybookModelConfig),
