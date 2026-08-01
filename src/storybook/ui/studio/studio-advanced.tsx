@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Surface, Button, StatusBadge, InlineAlert } from '@nimiplatform/kit/ui';
+import { Surface, Button, StatusBadge, InlineAlert, nimiToast } from '@nimiplatform/kit/ui';
 import {
   createEditLog,
   applyEdit,
@@ -37,7 +37,6 @@ export function StudioAdvanced({ record, onUpdate }: { record: StoredProjectReco
 
   const [scope, setScope] = useState<RegenerationScope>('bible-slice');
   const [target, setTarget] = useState(record.truthPackage.bible?.ref ?? '');
-  const [regenNotice, setRegenNotice] = useState<string | null>(null);
   const [regenBusy, setRegenBusy] = useState(false);
 
   const regenerationRequests = record.regenerationRequests ?? [];
@@ -76,13 +75,12 @@ export function StudioAdvanced({ record, onUpdate }: { record: StoredProjectReco
   }
 
   function requestRegen() {
-    setRegenNotice(null);
     const feedbackRefs = record.memory.feedbackPatches.map((p) => p.id);
     const result = createRegenerationRequest({ pkg: record.truthPackage, scope, targetRef: target, reason: '创作者请求范围内重生成', feedbackPatchRefs: feedbackRefs, now: nowIso() });
-    if (!result.ok) { setRegenNotice(`${result.code}: ${result.message}`); return; }
+    if (!result.ok) { nimiToast.danger(`${result.code}: ${result.message}`); return; }
     // PERSIST the request (queued) on the project — not a transient notice.
     onUpdate({ ...record, regenerationRequests: [...regenerationRequests, result.value] });
-    setRegenNotice(`已入队重生成请求（${result.value.scope} @ ${result.value.targetRef}）。`);
+    nimiToast.success(`已入队重生成请求（${result.value.scope} @ ${result.value.targetRef}）。`);
   }
 
   function replaceRequest(next: RegenerationRequest, patch: Partial<StoredProjectRecord> = {}) {
@@ -90,7 +88,6 @@ export function StudioAdvanced({ record, onUpdate }: { record: StoredProjectReco
   }
 
   async function executeRegen(request: RegenerationRequest) {
-    setRegenNotice(null);
     if (request.scope === 'bible-slice') {
       // REAL execution: regenerate the bible world summary, consuming accepted feedback,
       // and write it back to truth (version bump). Fail-closed on AI unavailable.
@@ -102,7 +99,7 @@ export function StudioAdvanced({ record, onUpdate }: { record: StoredProjectReco
       setRegenBusy(false);
       if (!outcome.ok) {
         replaceRequest(markRegeneration(request, 'failed', `${outcome.message}（${outcome.actionHint}）`, nowIso()));
-        setRegenNotice('重生成失败：AI 不可用。已标记为 failed（不伪造成功）。');
+        nimiToast.danger('重生成失败：AI 不可用。已标记为 failed（不伪造成功）。');
         return;
       }
       const applied = applyBibleDraft(record.truthPackage, { worldSummary: outcome.value }, nowIso());
@@ -111,12 +108,12 @@ export function StudioAdvanced({ record, onUpdate }: { record: StoredProjectReco
         return;
       }
       replaceRequest(markRegeneration(request, 'executed', '已用采纳偏好重写 Bible 世界概述并写回真值（版本已 bump）。', nowIso()), { truthPackage: applied.value });
-      setRegenNotice('已执行：Bible 世界概述基于反馈重生成并写回真值。');
+      nimiToast.success('已执行：Bible 世界概述基于反馈重生成并写回真值。');
       return;
     }
     // Other scopes: honest deferral — queued, not faked as done.
     replaceRequest(markRegeneration(request, 'deferred', '该范围的自动执行尚未接入；保持入队，等待后续生成接入或人工处理。', nowIso()));
-    setRegenNotice(`范围「${request.scope}」自动执行尚未接入，已显式标记 deferred（非伪成功）。`);
+    nimiToast.info(`范围「${request.scope}」自动执行尚未接入，已显式标记 deferred（非伪成功）。`);
   }
 
   return (
@@ -163,7 +160,6 @@ export function StudioAdvanced({ record, onUpdate }: { record: StoredProjectReco
             <input id="sb-regen-target" className="sb-input" value={target} onChange={(event) => setTarget(event.target.value)} placeholder="例如：ch1 或 truth:...:chapter:ch1" />
           </div>
         </div>
-        {regenNotice ? <InlineAlert tone="info"><div className="runtime-alert-copy"><strong>重生成</strong><span>{regenNotice}</span></div></InlineAlert> : null}
         <div className="sb-actions"><Button type="button" tone="secondary" size="sm" onClick={requestRegen}>入队重生成请求</Button></div>
 
         {regenerationRequests.length > 0 ? (

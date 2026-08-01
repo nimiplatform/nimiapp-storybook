@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Surface, Button, StatusBadge, InlineAlert } from '@nimiplatform/kit/ui';
+import { Surface, Button, StatusBadge, InlineAlert, nimiToast } from '@nimiplatform/kit/ui';
 import {
   assessPromotionCandidateLocally,
   enforcePromotionPolicy,
@@ -34,13 +34,11 @@ function describeCandidate(candidate: PromotionCandidate): string {
 type PendingEntry = { runId: string; candidate: PromotionCandidate };
 
 export function StudioPromotion({ record, onUpdate }: { record: StoredProjectRecord; onUpdate: (record: StoredProjectRecord) => void }) {
-  const [notice, setNotice] = useState<string | null>(null);
-  const [reviewError, setReviewError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const [realmInput, setRealmInput] = useState('foggy/world-rule/curfew');
   const [realmRelease, setRealmRelease] = useState('1.0.0');
-  const [realmNotice, setRealmNotice] = useState<string | null>(null);
+  const [realmError, setRealmError] = useState<string | null>(null);
 
   // Real, run-emerged candidates for THIS project (linked via sourceProjectId).
   const pending = useMemo<PendingEntry[]>(() => {
@@ -56,30 +54,29 @@ export function StudioPromotion({ record, onUpdate }: { record: StoredProjectRec
   }, [record.project.id, refreshKey]);
 
   function resolve(entry: PendingEntry, proposed: PromotionEnum) {
-    setReviewError(null);
     const assessment = assessPromotionCandidateLocally(entry.candidate);
     const decided = enforcePromotionPolicy({ candidate: entry.candidate, assessment, proposedDecision: proposed, now: nowIso() });
-    if (!decided.ok) { setReviewError(`${decided.code}: ${decided.message}`); return; }
+    if (!decided.ok) { nimiToast.danger(`${decided.code}: ${decided.message}`); return; }
     // record the decision ref in project memory; auto_accept additionally materializes a feedback patch
     const wired = recordAcceptedPromotion(record.memory, { decision: decided.value.decision, candidate: entry.candidate, note: describeCandidate(entry.candidate), now: nowIso() }, record.truthPackage);
-    if (!wired.ok) { setReviewError(`${wired.code}: ${wired.message}`); return; }
+    if (!wired.ok) { nimiToast.danger(`${wired.code}: ${wired.message}`); return; }
     onUpdate({ ...record, memory: wired.value });
     // mark resolved on the originating run so it does not reappear
     const run = getRun(entry.runId);
     if (run) saveRun({ ...run, resolvedCandidateIds: [...(run.resolvedCandidateIds ?? []), entry.candidate.id] });
     setRefreshKey((k) => k + 1);
-    setNotice(`候选 → ${decided.value.decision.decision}${proposed === 'auto_accept' ? '（已写入项目记忆，将作用于后续生成）' : ''}`);
+    nimiToast.success(`候选 → ${decided.value.decision.decision}${proposed === 'auto_accept' ? '（已写入项目记忆，将作用于后续生成）' : ''}`);
   }
 
   function importRealmRef() {
-    setRealmNotice(null);
+    setRealmError(null);
     const [namespace, kind, localId] = realmInput.split('/');
-    if (!namespace || !kind || !localId) { setRealmNotice('请使用 namespace/kind/localId 格式。'); return; }
+    if (!namespace || !kind || !localId) { setRealmError('请使用 namespace/kind/localId 格式。'); return; }
     const imported = createImportedRef({ realmRef: makeRealmRef(namespace, kind as Parameters<typeof makeRealmRef>[1], localId), realmObjectKind: kind as Parameters<typeof makeRealmRef>[1], realmRelease });
-    if (!imported.ok) { setRealmNotice(`${imported.code}: ${imported.message}`); return; }
+    if (!imported.ok) { setRealmError(`${imported.code}: ${imported.message}`); return; }
     // persist onto the truth package so it participates in projection/diagnostics
     onUpdate({ ...record, truthPackage: addRealmImport(record.truthPackage, imported.value, nowIso()) });
-    setRealmNotice(`已引用并持久化：${imported.value.realmRef} @ ${imported.value.realmRelease}`);
+    nimiToast.success(`已引用并持久化：${imported.value.realmRef} @ ${imported.value.realmRelease}`);
   }
 
   function attemptRunStatePromotion() {
@@ -87,7 +84,11 @@ export function StudioPromotion({ record, onUpdate }: { record: StoredProjectRec
       targetRealmObject: { kind: 'world-rule', ref: makeRealmRef('foggy', 'world-rule', 'curfew') }, mutationType: 'update',
       sourceTruthRefs: ['turn:demo-run'], evidenceRefs: [], authority: 'realm-reviewer', note: '尝试把运行内容提升为 Realm 真值', now: nowIso(),
     });
-    setRealmNotice(attempt.ok ? '（意外）允许了运行态提升——这不应发生。' : `已正确拒绝：${attempt.code} — ${attempt.message}`);
+    if (attempt.ok) {
+      nimiToast.danger('（意外）允许了运行态提升——这不应发生。');
+    } else {
+      nimiToast.warning(`已正确拒绝：${attempt.code} — ${attempt.message}`);
+    }
   }
 
   const realmImports = record.truthPackage.realmImports;
@@ -102,8 +103,6 @@ export function StudioPromotion({ record, onUpdate }: { record: StoredProjectRec
           </div>
           <StatusBadge tone={pending.length > 0 ? 'info' : 'neutral'}>{pending.length} 条待复核</StatusBadge>
         </div>
-        {reviewError ? <InlineAlert tone="warning"><div className="runtime-alert-copy"><strong>策略失败</strong><span>{reviewError}</span></div></InlineAlert> : null}
-        {notice ? <InlineAlert tone="info"><div className="runtime-alert-copy"><strong>已处理</strong><span>{notice}</span></div></InlineAlert> : null}
         {pending.length === 0 ? (
           <p className="sb-muted">暂无待复核候选。先在 Play 里用「创作者」包游玩、发送自由文本或点 👎，再回到这里复核。</p>
         ) : (
@@ -172,7 +171,7 @@ export function StudioPromotion({ record, onUpdate }: { record: StoredProjectRec
             })}
           </div>
         ) : null}
-        {realmNotice ? <InlineAlert tone="info"><div className="runtime-alert-copy"><strong>Realm 边界</strong><span>{realmNotice}</span></div></InlineAlert> : null}
+        {realmError ? <InlineAlert tone="warning"><div className="runtime-alert-copy"><strong>Realm 边界</strong><span>{realmError}</span></div></InlineAlert> : null}
       </Surface>
     </>
   );

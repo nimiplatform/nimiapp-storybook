@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Surface, Button, StatusBadge, InlineAlert } from '@nimiplatform/kit/ui';
+import { Surface, Button, StatusBadge, InlineAlert, nimiToast } from '@nimiplatform/kit/ui';
 import {
   buildStudioProjection,
   buildPreparedPackage,
@@ -38,7 +38,6 @@ export function StudioProject({ projectId, onBack }: { projectId: string; onBack
   const [aiBusy, setAiBusy] = useState(false);
   const [aiDraft, setAiDraft] = useState<string | null>(null);
   const [aiNotice, setAiNotice] = useState<string | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
   const [prepared, setPrepared] = useState<PreparedStorybookPackage | null>(null);
   const [tab, setTab] = useState<StudioTab>('workbench');
 
@@ -83,32 +82,32 @@ export function StudioProject({ projectId, onBack }: { projectId: string; onBack
   function applyDraft() {
     if (!aiDraft) return;
     const next = applyBibleDraft(record!.truthPackage, { worldSummary: aiDraft }, nowIso());
-    if (!next.ok) { setActionError(next.message); return; }
+    if (!next.ok) { nimiToast.danger(next.message); return; }
     commitPackage(next.value);
     setAiDraft(null);
+    nimiToast.success('已应用：AI 草案写入 Bible 世界概述。');
   }
 
   function doApproveBible() {
-    setActionError(null);
     const next = approveBible(record!.truthPackage, nowIso());
-    if (!next.ok) { setActionError(`${next.code}: ${next.message}`); return; }
+    if (!next.ok) { nimiToast.danger(`${next.code}: ${next.message}`); return; }
     commitPackage(next.value);
+    nimiToast.success('已通过基础审阅：Bible 已审批。');
   }
 
   function doScaffold() {
-    setActionError(null);
     const next = scaffoldStarterChapter(record!.truthPackage, nowIso());
-    if (!next.ok) { setActionError(`${next.code}: ${next.message}`); return; }
+    if (!next.ok) { nimiToast.danger(`${next.code}: ${next.message}`); return; }
     commitPackage(next.value);
+    nimiToast.success('已生成最小可玩序章。');
   }
 
   function doPrepare() {
-    setActionError(null);
     setPrepared(null);
     const built = buildPreparedPackage({ pkg: record!.truthPackage, producer: record!.project.name, now: nowIso() });
-    if (!built.ok) { setActionError(`无法准备 Play package（${built.code}）：${built.message}`); return; }
+    if (!built.ok) { nimiToast.danger(`无法准备 Play package（${built.code}）：${built.message}`); return; }
     const report = validatePreparedPackage(built.value);
-    if (!report.valid) { setActionError(`prepared package 未通过校验：${report.findings.map((f) => f.message).join('；')}`); return; }
+    if (!report.valid) { nimiToast.danger(`prepared package 未通过校验：${report.findings.map((f) => f.message).join('；')}`); return; }
     saveImportedPackage({
       id: built.value.manifest.packageId,
       label: `${record!.project.name}（创作者）`,
@@ -122,11 +121,11 @@ export function StudioProject({ projectId, onBack }: { projectId: string; onBack
   }
 
   function addBibleFeedback() {
-    setActionError(null);
     const bibleRef = record!.truthPackage.bible?.ref ?? null;
     const next = addFeedbackPatch(record!.memory, { targetRef: bibleRef, kind: 'preference', note: '希望 Bible 的基调更克制。', weight: 1, now: nowIso() }, record!.truthPackage);
-    if (!next.ok) { setActionError(`${next.code}: ${next.message}`); return; }
+    if (!next.ok) { nimiToast.danger(`${next.code}: ${next.message}`); return; }
     saveAndSet({ ...record!, memory: next.value });
+    nimiToast.success('已记录反馈补丁：已写入项目记忆，将作用于后续生成。');
   }
 
   const bible = record.truthPackage.bible;
@@ -230,7 +229,6 @@ export function StudioProject({ projectId, onBack }: { projectId: string; onBack
           <Button type="button" tone="secondary" size="sm" onClick={doScaffold} disabled={record.truthPackage.chapters.length > 0}>生成最小可玩序章</Button>
           <Button type="button" tone="primary" size="sm" onClick={doPrepare}>准备 Play package</Button>
         </div>
-        {actionError ? <InlineAlert tone="warning"><div className="runtime-alert-copy"><strong>操作失败</strong><span>{actionError}</span></div></InlineAlert> : null}
         {prepared ? (
           <Surface className="sb-card" material="glass-thin" tone="card">
             <div className="sb-chip-row">

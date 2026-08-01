@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Surface, Button, StatusBadge, InlineAlert } from '@nimiplatform/kit/ui';
+import { Surface, Button, StatusBadge, InlineAlert, nimiToast } from '@nimiplatform/kit/ui';
 import {
   buildExamplePreparedPackage,
   validatePreparedPackage,
@@ -37,7 +37,6 @@ export function PlayHome({ onStartRun }: { onStartRun: (runId: string) => void }
   const [packages, setPackages] = useState<ImportedPackageRecord[]>([]);
   const [importText, setImportText] = useState('');
   const [importError, setImportError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     // Seed the official example package on first load so Play has a valid
@@ -63,7 +62,7 @@ export function PlayHome({ onStartRun }: { onStartRun: (runId: string) => void }
     setPackages(listImportedPackages());
   }, []);
 
-  const runs = useMemo(() => listRuns(), [packages, notice]);
+  const runs = useMemo(() => listRuns(), [packages]);
 
   function refresh() {
     setPackages(listImportedPackages());
@@ -71,7 +70,6 @@ export function PlayHome({ onStartRun }: { onStartRun: (runId: string) => void }
 
   function importLocalPackage() {
     setImportError(null);
-    setNotice(null);
     let parsed: unknown;
     try {
       parsed = JSON.parse(importText);
@@ -94,7 +92,7 @@ export function PlayHome({ onStartRun }: { onStartRun: (runId: string) => void }
       importedAt: nowIso(),
     });
     setImportText('');
-    setNotice('已导入并通过校验。');
+    nimiToast.success('已导入并通过校验。');
     refresh();
   }
 
@@ -202,7 +200,6 @@ export function PlayHome({ onStartRun }: { onStartRun: (runId: string) => void }
           />
         </div>
         {importError ? <InlineAlert tone="warning"><div className="runtime-alert-copy"><strong>导入失败</strong><span>{importError}</span></div></InlineAlert> : null}
-        {notice ? <InlineAlert tone="info"><div className="runtime-alert-copy"><strong>提示</strong><span>{notice}</span></div></InlineAlert> : null}
         <div className="sb-actions">
           <Button type="button" tone="primary" size="sm" disabled={!importText.trim()} onClick={importLocalPackage}>校验并导入</Button>
         </div>

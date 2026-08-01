@@ -38,14 +38,6 @@ body {
   padding: 24px;
 }
 
-.runtime-login-alert {
-  position: absolute;
-  right: 24px;
-  bottom: 24px;
-  z-index: 20;
-  max-width: min(420px, calc(100vw - 48px));
-}
-
 .runtime-alert-copy {
   display: grid;
   gap: 4px;

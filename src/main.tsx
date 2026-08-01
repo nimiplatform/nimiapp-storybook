@@ -1,6 +1,6 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { NimiThemeProvider, TooltipProvider } from '@nimiplatform/kit/ui';
+import { NimiThemeProvider, NimiToaster, TooltipProvider } from '@nimiplatform/kit/ui';
 import { installNimiShellRuntimeBridge } from '@nimiplatform/kit/shell/renderer/bridge';
 import './styles.css';
 import './shell/auth/auth-i18n.js';
@@ -16,7 +16,8 @@ createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
     <NimiThemeProvider accentPack="nimi-accent">
       <TooltipProvider>
-        <App />
+        <App />\r
+        <NimiToaster />
       </TooltipProvider>
     </NimiThemeProvider>
   </React.StrictMode>,
