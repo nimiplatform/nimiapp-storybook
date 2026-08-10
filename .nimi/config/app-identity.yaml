@@ -1,7 +1,7 @@
 app_id: nimi.storybook
 display_name: Storybook
 npm_package_name: nimiapp-storybook
-cargo_package_name: nimiapp-storybook-shell
-tauri_identifier: nimi.storybook
+shell: electron
+electron_main: src-electron/main.ts
 package_author: Nimi Team
 identity_role: scaffold-generated-authoring-input

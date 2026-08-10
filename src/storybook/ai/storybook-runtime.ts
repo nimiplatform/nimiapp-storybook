@@ -4,7 +4,6 @@
 // attempting any provider call.
 
 import { getRuntimePlatformProjection } from '../../shell/auth/runtime-platform.js';
-import { loadStorybookAIConfig } from './storybook-ai-config-store.js';
 import { storybookAIUnavailable } from './storybook-unavailable.js';
 import {
   generateBibleDraft,
@@ -26,10 +25,9 @@ export async function inspectStorybookRuntime(): Promise<StorybookRuntimeInspect
     return { status: 'unavailable', mode: projection.mode, detail: projection.message };
   }
   try {
-    await projection.client.runtime.health({});
-    return { status: 'ready', mode: projection.mode, detail: 'Runtime session ready. Storybook routes AI through runtime.ai.* / runtime.media.* via an NimiAIConfig binding.' };
+    return { status: 'ready', mode: projection.mode, detail: 'Runtime session ready. Storybook text generation uses the protected App Access carrier.' };
   } catch (error) {
-    return { status: 'unavailable', mode: projection.mode, detail: error instanceof Error ? error.message : String(error || 'Runtime health check failed.') };
+    return { status: 'unavailable', mode: projection.mode, detail: error instanceof Error ? error.message : String(error || 'Runtime inspection failed.') };
   }
 }
 
@@ -43,7 +41,7 @@ export async function runBibleDraft(input: { projectId: string; premise: string;
     const unavailable = storybookAIUnavailable('text.generate', 'runtime-not-ready', projection.message);
     return { ...unavailable, run: { id: 'genrun-unready', projectId: input.projectId, kind: 'bible-draft', request: {}, provenance: { at: nowIso(), status: 'unavailable', reason: 'runtime-not-ready' }, outputRefs: [] } };
   }
-  return generateBibleDraft(projection.client, { ...input, now: nowIso() }, loadStorybookAIConfig());
+  return generateBibleDraft(projection.client, { ...input, now: nowIso() });
 }
 
 export async function runSceneText(input: { projectId: string; contextLines: string[]; instruction: string }): Promise<GenerationOutcome<string>> {
@@ -52,7 +50,7 @@ export async function runSceneText(input: { projectId: string; contextLines: str
     const unavailable = storybookAIUnavailable('text.generate', 'runtime-not-ready', projection.message);
     return { ...unavailable, run: { id: 'genrun-unready', projectId: input.projectId, kind: 'scene-text', request: {}, provenance: { at: nowIso(), status: 'unavailable', reason: 'runtime-not-ready' }, outputRefs: [] } };
   }
-  return generateSceneText(projection.client, { ...input, now: nowIso() }, loadStorybookAIConfig());
+  return generateSceneText(projection.client, { ...input, now: nowIso() });
 }
 
 export async function runChoiceSuggestions(input: { projectId: string; nodeText: string; count: number }): Promise<GenerationOutcome<string[]>> {
@@ -61,7 +59,7 @@ export async function runChoiceSuggestions(input: { projectId: string; nodeText:
     const unavailable = storybookAIUnavailable('text.generate', 'runtime-not-ready', projection.message);
     return { ...unavailable, run: { id: 'genrun-unready', projectId: input.projectId, kind: 'choice-suggestions', request: {}, provenance: { at: nowIso(), status: 'unavailable', reason: 'runtime-not-ready' }, outputRefs: [] } };
   }
-  return generateChoiceSuggestions(projection.client, { ...input, now: nowIso() }, loadStorybookAIConfig());
+  return generateChoiceSuggestions(projection.client, { ...input, now: nowIso() });
 }
 
 export async function runAssetImage(input: { projectId: string; assetRef: string; description: string }): Promise<GenerationOutcome<{ artifactRef: string; mimeType: string }>> {

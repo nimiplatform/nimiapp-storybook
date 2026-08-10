@@ -10,6 +10,7 @@ export type StorybookAIUnavailableReason =
   | 'auth-context-missing'
   | 'principal-unauthorized'
   | 'sdk-method-unavailable'
+  | 'capability-unavailable'
   | 'runtime-call-failed';
 
 export type StorybookAIUnavailable = {
@@ -18,6 +19,7 @@ export type StorybookAIUnavailable = {
   reason: StorybookAIUnavailableReason;
   message: string;
   actionHint: string;
+  technicalDetail?: string;
 };
 
 export function aiUnavailableTitle(reason: StorybookAIUnavailableReason): string {
@@ -28,6 +30,7 @@ export function aiUnavailableTitle(reason: StorybookAIUnavailableReason): string
     case 'auth-context-missing': return '需要登录';
     case 'principal-unauthorized': return '会话未授权';
     case 'sdk-method-unavailable': return 'SDK 方法不可用';
+    case 'capability-unavailable': return '当前能力不可用';
     case 'runtime-call-failed': return '运行时调用失败';
   }
 }
@@ -46,11 +49,25 @@ function actionHintForReason(reason: StorybookAIUnavailableReason): string {
       return '运行时账户会话未授权或已过期。请重新登录后重试。';
     case 'sdk-method-unavailable':
       return '需要一个已准入的 SDK 执行方法。不要使用 app 本地 REST 绕过运行时。';
+    case 'capability-unavailable':
+      return '当前平台契约尚未提供该能力。Storybook 会保持不可用状态，不会伪造结果。';
     case 'runtime-call-failed':
       return '运行时返回了一个有类型的契约失败。请查看上方运行时原始错误——这是真实的运行时/契约失败，不是伪成功。';
   }
 }
 
-export function storybookAIUnavailable(capability: string, reason: StorybookAIUnavailableReason, message: string): StorybookAIUnavailable {
-  return { ok: false, capability, reason, message, actionHint: actionHintForReason(reason) };
+export function storybookAIUnavailable(
+  capability: string,
+  reason: StorybookAIUnavailableReason,
+  message: string,
+  technicalDetail?: string,
+): StorybookAIUnavailable {
+  return {
+    ok: false,
+    capability,
+    reason,
+    message,
+    actionHint: actionHintForReason(reason),
+    ...(technicalDetail ? { technicalDetail } : {}),
+  };
 }

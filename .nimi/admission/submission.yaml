@@ -1,9 +1,9 @@
 app_id: nimi.storybook
 display_name: Storybook
-profile: workspace-app
+profile: standalone
 npm_package_name: nimiapp-storybook
-cargo_package_name: nimiapp-storybook-shell
-tauri_identifier: nimi.storybook
+shell: electron
+electron_main: src-electron/main.ts
 package_author: Nimi Team
 submission_role: developer-submitted-input
 publish_readiness:

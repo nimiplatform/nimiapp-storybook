@@ -1,9 +1,10 @@
 schema_version: 1
 app_id: nimi.storybook
 display_name: Storybook
-profile: workspace-app
+profile: standalone
 manifest_role: submitted-input
-permissions: []
+app_access:
+  - runtime.consume
 local_development:
   electron:
     renderer_origin: http://127.0.0.1:1473

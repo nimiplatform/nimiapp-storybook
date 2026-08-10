@@ -1,9 +1,10 @@
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { app, BrowserWindow, ipcMain, Menu } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, protocol, session, webContents } from 'electron';
 import {
   createNimiElectronStandardApplicationMenuTemplate,
   isAllowedElectronRendererUrl,
+  registerNimiElectronAppAssetProtocolScheme,
   registerNimiElectronAppBridge,
 } from '@nimiplatform/kit/shell/electron/main';
 
@@ -19,6 +20,7 @@ app.commandLine.appendSwitch('disable-background-networking');
 Menu.setApplicationMenu(Menu.buildFromTemplate(
   createNimiElectronStandardApplicationMenuTemplate({ appName: 'Storybook' }),
 ));
+registerNimiElectronAppAssetProtocolScheme(protocol);
 
 void app.whenReady().then(bootstrapElectron).catch((error: unknown) => {
   process.stderr.write(`${error instanceof Error ? error.message : String(error || 'Storybook Electron startup failed')}\n`);
@@ -29,8 +31,8 @@ async function bootstrapElectron(): Promise<void> {
   registerNimiElectronAppBridge({
     appId: STORYBOOK_APP_ID,
     allowedRendererUrls: [activeRendererUrl()],
+    assetMediaPlatform: { protocol, webRequest: session.defaultSession.webRequest, webContents },
     ipcMain,
-    onProtectedSessionFailure: () => app.quit(),
   });
   await createMainWindow();
   app.on('activate', () => {

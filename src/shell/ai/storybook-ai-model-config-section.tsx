@@ -1,159 +1,166 @@
-import { useEffect, useMemo, useState } from 'react';
-import {
-  ModelConfigAiModelHub,
-  defaultModelConfigProfileCopy,
-  useModelConfigProfileController,
-  type AppModelConfigSurface,
-  type ModelConfigProjectionStatus,
-  type SharedAIConfigService,
-} from '@nimiplatform/kit/features/model-config';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type {
-  NimiAIConfig,
-  NimiAIConfigTargetRef,
-  NimiAIScopeRef,
+  NimiCapabilityAIConfigIntent,
+  NimiPortableAppAIConfig,
+  NimiPortableAppAIConfigIntent,
 } from '@nimiplatform/sdk/ai';
-import { useAppStore } from '../app-shell/app-store.js';
 import {
-  createStorybookAIConfigService,
-  createStorybookAIScopeRef,
+  ModelConfigAIConfigSurface,
+  type ModelConfigFormattedError,
+} from '@nimiplatform/kit/features/model-config';
+import { STORYBOOK_APP_ID } from '../../contracts/app-identity.ts';
+import {
+  loadStorybookAIConfig,
+  overwriteStorybookAIConfig,
+  versionStorybookAIConfig,
 } from '../../storybook/ai/storybook-ai-config-store.ts';
-import { createStorybookRuntimeModelPickerProviderCache } from './storybook-runtime-model-provider.ts';
-import {
-  STORYBOOK_TEXT_GENERATE_CAPABILITY_ID,
-  createStorybookModelRequirementDeclaration,
-} from './storybook-ai-requirements.ts';
-import { translateStorybookModelConfig } from './model-config-copy.ts';
-
-function bindingStatus(
-  config: NimiAIConfig,
-  runtimeReady: boolean,
-  runtimeDetail: string | null,
-): ModelConfigProjectionStatus {
-  if (!runtimeReady) {
-    return {
-      supported: false,
-      tone: 'attention',
-      badgeLabel: 'Runtime 未就绪',
-      title: 'Runtime 不可用',
-      detail: runtimeDetail || 'Storybook bootstrap 尚未完成。',
-    };
-  }
-  const targetRef = config.capabilities.targetRefs[STORYBOOK_TEXT_GENERATE_CAPABILITY_ID] || null;
-  if (!targetRef) {
-    return {
-      supported: false,
-      tone: 'attention',
-      badgeLabel: '需要绑定',
-      title: '缺少 text.generate 目标',
-      detail: 'Storybook 不会自动选择 provider/model；请通过 AI Config 绑定 Runtime route。',
-    };
-  }
-  return {
-    supported: true,
-    tone: 'ready',
-    badgeLabel: '已配置',
-    title: '模型已配置',
-    detail: targetRefLabel(targetRef),
-  };
-}
-
-function targetRefLabel(targetRef: NimiAIConfigTargetRef): string {
-  if (targetRef.kind === 'cloud-connector') {
-    return targetRef.providerModelId || targetRef.connectorId;
-  }
-  if (targetRef.kind === 'local-runtime') {
-    return targetRef.profileBindingId || targetRef.readinessRef || 'local-runtime';
-  }
-  return targetRef.sliceId;
-}
-
-function useLiveAIConfig(service: SharedAIConfigService, scopeRef: NimiAIScopeRef): NimiAIConfig {
-  const [config, setConfig] = useState<NimiAIConfig>(() => service.aiConfig.get(scopeRef));
-  useEffect(() => {
-    setConfig(service.aiConfig.get(scopeRef));
-    return service.aiConfig.subscribe(scopeRef, setConfig);
-  }, [service, scopeRef]);
-  return config;
-}
+import { useAppStore } from '../app-shell/app-store.js';
+import { STORYBOOK_MODEL_CONFIG_COPY } from './model-config-copy.ts';
+import { STORYBOOK_TEXT_GENERATE_CAPABILITY_ID } from './storybook-ai-requirements.ts';
 
 export function StorybookAiModelConfigSection() {
   const bootstrapReady = useAppStore((state) => state.bootstrapReady);
-  const bootstrapError = useAppStore((state) => state.bootstrapError);
-  const runtimeGenerationReady = false;
-  const runtimeGenerationDetail = bootstrapError
-    || (bootstrapReady
-      ? 'Desktop-supervised standard bridge 尚未准入 Storybook generic generation。'
-      : 'Storybook Desktop-supervised session 尚未建立。');
-  const service = useMemo(() => createStorybookAIConfigService(), []);
-  const scopeRef = useMemo(() => createStorybookAIScopeRef(), []);
-  const config = useLiveAIConfig(service, scopeRef);
-  const providerCache = useMemo(() => createStorybookRuntimeModelPickerProviderCache(), []);
-  const requirementDeclaration = useMemo(
-    () => createStorybookModelRequirementDeclaration(scopeRef),
-    [scopeRef],
-  );
+  const authenticated = useAppStore((state) => state.auth.status === 'authenticated');
+  const [config, setConfig] = useState<NimiPortableAppAIConfig | null | undefined>(undefined);
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  const surface = useMemo<AppModelConfigSurface>(() => ({
-    scopeRef,
-    aiConfigService: service,
-    requirementDeclaration,
-    enabledCapabilities: [STORYBOOK_TEXT_GENERATE_CAPABILITY_ID],
-    providerResolver: (capabilityId: string) => (
-      runtimeGenerationReady ? providerCache(capabilityId) : null
-    ),
-    projectionResolver: () => bindingStatus(
-      config,
-      runtimeGenerationReady,
-      runtimeGenerationDetail,
-    ),
-    runtimeReady: runtimeGenerationReady,
-    runtimeNotReadyLabel: runtimeGenerationDetail,
-    i18n: { t: translateStorybookModelConfig },
-  }), [
-    config,
-    providerCache,
-    requirementDeclaration,
-    runtimeGenerationDetail,
-    runtimeGenerationReady,
-    scopeRef,
-    service,
-  ]);
+  const refresh = useCallback(async () => {
+    if (!bootstrapReady || !authenticated) {
+      setConfig(undefined);
+      setLoadError(null);
+      return;
+    }
+    setLoading(true);
+    setLoadError(null);
+    try {
+      setConfig(await loadStorybookAIConfig());
+    } catch (error) {
+      setConfig(undefined);
+      setLoadError(error instanceof Error ? error.message : String(error || 'AIConfig read failed.'));
+    } finally {
+      setLoading(false);
+    }
+  }, [authenticated, bootstrapReady]);
 
-  const profileCopy = useMemo(
-    () => defaultModelConfigProfileCopy(translateStorybookModelConfig),
-    [],
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  const overwrite = useCallback(async (
+    capabilities: readonly NimiCapabilityAIConfigIntent[],
+  ) => {
+    const expectedBaseVersion = versionStorybookAIConfig(config ?? null);
+    const next = await overwriteStorybookAIConfig(
+      requirePortableCapabilities(capabilities),
+      { expectedBaseVersion },
+    );
+    setConfig(next);
+  }, [config]);
+
+  const context = useMemo(() => ({
+    owner: 'app-ai-config' as const,
+    consumer: 'third-party-app' as const,
+    appId: STORYBOOK_APP_ID,
+  }), []);
+  const presentedCapabilities = useMemo(
+    () => config === undefined
+      ? undefined
+      : config === null
+        ? null
+        : config.capabilities.map(presentCapability),
+    [config],
   );
-  const currentOrigin = useMemo(
-    () => (config.profileOrigin
-      ? { profileId: config.profileOrigin.profileId, title: config.profileOrigin.title }
-      : null),
-    [config.profileOrigin],
-  );
-  const profile = useModelConfigProfileController({
-    scopeRef,
-    aiConfigService: service,
-    requirementDeclaration,
-    copy: profileCopy,
-    currentOrigin,
-  });
 
   return (
-    <section
-      id="storybook-ai-model-config"
-      className="sb-ai-model-config"
-      tabIndex={-1}
-    >
-      <div className="sb-ai-model-config__head">
-        <div>
-          <h2>AI 模型</h2>
-          <p>Runtime route binding for Storybook generation.</p>
-        </div>
-      </div>
-      <ModelConfigAiModelHub
-        surface={surface}
-        profile={profile}
+    <section id="storybook-ai-model-config" className="sb-ai-model-config" tabIndex={-1}>
+      <ModelConfigAIConfigSurface
+        context={context}
+        capabilityContracts={[STORYBOOK_TEXT_GENERATE_CAPABILITY_ID]}
+        capabilities={presentedCapabilities}
+        loading={loading}
+        disabled={!bootstrapReady || !authenticated}
+        loadError={loadError}
+        onRetry={() => void refresh()}
+        onOverwrite={overwrite}
+        formatError={formatModelConfigError}
+        copy={STORYBOOK_MODEL_CONFIG_COPY}
         className="sb-ai-model-config__hub"
+        headerSlot={(
+          <p className="sb-ai-model-config__posture">
+            {authenticated
+              ? '配置由 Runtime 保存；Storybook 不持有 provider、model 或凭据。'
+              : '连接到 Desktop 管理的 Nimi 会话后即可读取配置。'}
+          </p>
+        )}
       />
     </section>
   );
+}
+
+function formatModelConfigError(error: unknown): ModelConfigFormattedError {
+  return {
+    message: 'AI 配置操作未完成。请确认 Nimi 会话可用后重试。',
+    technicalDetail: error instanceof Error ? error.message : String(error || 'Unknown AIConfig error.'),
+  };
+}
+
+function requirePortableCapabilities(
+  capabilities: readonly NimiCapabilityAIConfigIntent[],
+): readonly NimiPortableAppAIConfigIntent[] {
+  return capabilities.map((intent) => {
+    if (intent.route.oneofKind === 'local') {
+      return {
+        capabilityContract: intent.capabilityContract,
+        requiredFeatures: [...intent.requiredFeatures],
+        ...(intent.defaults ? { defaults: intent.defaults } : {}),
+        route: { oneofKind: 'local' as const, local: {} },
+      };
+    }
+    if (intent.route.oneofKind === 'cloud') {
+      const grantId = intent.route.cloud.connectorGrantId?.trim();
+      if (grantId) {
+        throw new Error('Third-party App AIConfig must not carry ConnectorGrant custody.');
+      }
+      return {
+        capabilityContract: intent.capabilityContract,
+        requiredFeatures: [...intent.requiredFeatures],
+        ...(intent.defaults ? { defaults: intent.defaults } : {}),
+        route: {
+          oneofKind: 'cloud' as const,
+          cloud: {
+            implementation: intent.route.cloud.implementation,
+            providerModelTarget: intent.route.cloud.providerModelTarget,
+          },
+        },
+      };
+    }
+    throw new Error('AIConfig capability route must be Local or Cloud.');
+  });
+}
+
+function presentCapability(
+  intent: NimiPortableAppAIConfigIntent,
+): NimiCapabilityAIConfigIntent {
+  if (intent.route.oneofKind === 'local') {
+    return {
+      capabilityContract: intent.capabilityContract,
+      requiredFeatures: [...intent.requiredFeatures],
+      ...(intent.defaults ? { defaults: intent.defaults } : {}),
+      route: { oneofKind: 'local', local: {} },
+    };
+  }
+  return {
+    capabilityContract: intent.capabilityContract,
+    requiredFeatures: [...intent.requiredFeatures],
+    ...(intent.defaults ? { defaults: intent.defaults } : {}),
+    route: {
+      oneofKind: 'cloud',
+      cloud: {
+        implementation: intent.route.cloud.implementation,
+        providerModelTarget: intent.route.cloud.providerModelTarget,
+        connectorGrantId: '',
+      },
+    },
+  };
 }

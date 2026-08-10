@@ -1,5 +1,4 @@
 import { useAppStore } from '../app-shell/app-store.js';
-import { describeError, logRendererEvent } from './renderer-log.js';
 import { getStorybookNimiClient } from './storybook-nimi-client.js';
 import { STORYBOOK_APP_ID } from '../../contracts/app-identity.ts';
 
@@ -40,36 +39,17 @@ export async function ensureStorybookSessionBound(): Promise<void> {
 
 async function doRunStorybookBootstrap(): Promise<void> {
   const store = useAppStore.getState();
-  const flowId = `storybook-bootstrap-${Date.now().toString(36)}`;
-
   try {
     const session = await getStorybookNimiClient().auth.status();
     if (session.sessionBound) {
       store.setAuthSession();
     } else {
-      logRendererEvent({
-        level: 'warn',
-        area: 'storybook-bootstrap.session',
-        message: 'action:desktop-supervised-session-required',
-        flowId,
-        details: {
-          reasonCode: session.reasonCode,
-          actionHint: session.actionHint,
-        },
-      });
       store.clearAuthSession(session.reasonCode, session.actionHint);
     }
     store.setBootstrapReady(true);
     store.setBootstrapError(null);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    logRendererEvent({
-      level: 'error',
-      area: 'bootstrap',
-      message: 'action:bootstrap-failed',
-      flowId,
-      details: { error: describeError(error) },
-    });
     store.setBootstrapError(message);
     store.setBootstrapReady(false);
   }

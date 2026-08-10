@@ -1,20 +1,16 @@
-import type { NimiClient } from '@nimiplatform/sdk';
+import type { NimiLocalAppClient } from '@nimiplatform/sdk';
 import { STORYBOOK_APP_ID } from '../../contracts/app-identity.ts';
 import { useAppStore } from '../app-shell/app-store.ts';
+import { getStorybookNimiClient } from '../infra/storybook-nimi-client.ts';
 
 export const appId = STORYBOOK_APP_ID;
 export const appTitle = 'Storybook';
-export const scaffoldProfile = 'workspace-app' as const;
+export const scaffoldProfile = 'standalone' as const;
 export const runtimeAccountLoginEnabled = false;
 
 export type StorybookRuntimeAuthMode = 'desktop-supervised-local-app';
 
-/**
- * Retained only as the input type for the typed generation boundary. The
- * Desktop-supervised local-app carrier does not materialize this client until
- * a public generic-generation contract is admitted.
- */
-export type StorybookRuntimePlatformClient = Pick<NimiClient, 'appId' | 'runtime' | 'ai' | 'features'>;
+export type StorybookRuntimePlatformClient = Pick<NimiLocalAppClient, 'ai' | 'aiConfig'>;
 
 export type StorybookRuntimeAuthUnavailable = {
   status: 'unavailable' | 'action-required';
@@ -52,10 +48,12 @@ export async function getRuntimePlatformProjection(): Promise<StorybookRuntimePl
     };
   }
   return {
-    status: 'unavailable',
+    status: 'ready',
     mode: 'desktop-supervised-local-app',
-    reasonCode: 'storybook-generic-runtime-generation-not-admitted',
-    actionHint: 'admit_public_local_app_generation_contract',
-    message: 'Storybook generic Runtime generation is not admitted on the Desktop-supervised standard bridge.',
+    client: getStorybookNimiClient(),
+    auth: {
+      state: 'ready',
+      source: 'desktop-supervised-standard-bridge',
+    },
   };
 }

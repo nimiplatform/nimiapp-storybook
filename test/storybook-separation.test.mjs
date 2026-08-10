@@ -97,14 +97,12 @@ test('app shell wires separated Play and Studio surfaces', () => {
   assert.match(app, /data-testid="surface-studio"/);
 });
 
-test('AI boundary uses AIConfig bindings with no provider/model hardcoding', () => {
+test('AI boundary uses portable App AIConfig intent with no provider/model hardcoding', () => {
   const invokers = read('src/storybook/ai/storybook-runtime-invokers.ts');
-  // text path is binding-driven (AIConfig), not a named model
-  assert.match(invokers, /resolveStorybookTextBinding/);
-  const textPath = invokers.slice(0, invokers.indexOf('invokeStorybookImage'));
-  assert.doesNotMatch(textPath, /model:\s*['"]auto['"]/, 'text path must not pin a model; it routes by AIConfig binding');
-  // image path defers route selection to the runtime via "auto" (not a provider name)
-  assert.match(invokers, /modelId:\s*['"]auto['"]/);
+  assert.match(invokers, /resolveStorybookTextIntent/);
+  assert.match(invokers, /client\.ai\.text\.generateCandidate/);
+  assert.doesNotMatch(invokers, /createNimiRuntimeAIModel|createRuntimeClient|modelId:\s*['"]auto['"]/);
+  assert.match(invokers, /Image generation is not available through the current App Access contract/);
 
   // no hardcoded provider/model brand anywhere in the app source
   const allSource = listFiles(path.join(root, 'src', 'storybook')).map((f) => readFileSync(f, 'utf8')).join('\n');
@@ -119,9 +117,10 @@ test('AI boundary returns typed unavailable states (no fabricated output)', () =
   assert.match(runtime, /runtime-not-ready/);
   assert.match(unavailable, /ai-binding-missing/);
   assert.match(unavailable, /StorybookAIUnavailable/);
-  // generation records provenance even on failure, and never fabricates an artifact
+  // generation records provenance even on failure, and the missing image surface never fabricates an artifact
   const generation = read('src/storybook/ai/storybook-generation.ts');
-  assert.match(generation, /returned no usable artifact/);
+  assert.match(generation, /invokeStorybookImage/);
+  assert.match(unavailable, /capability-unavailable/);
   assert.match(generation, /status: 'unavailable'/);
 });
 

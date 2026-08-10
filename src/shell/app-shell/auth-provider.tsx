@@ -93,8 +93,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         detail="账号登录、项目准入和会话续期均由 Desktop 管理；Storybook 不提供自登录或自授权入口。"
       >
         <InlineAlert tone="warning">
-          {gateState.reasonCode} · {gateState.actionHint}
+          请确认 Nimi Desktop 已登录并已为当前项目建立受保护会话。
         </InlineAlert>
+        <details className="text-xs text-[var(--nimi-text-muted)]">
+          <summary>技术详情</summary>
+          <code>{gateState.reasonCode} · {gateState.actionHint}</code>
+        </details>
         <Button tone="primary" onClick={retry} loading={retrying}>重新检查</Button>
       </AuthGateScreen>
     );

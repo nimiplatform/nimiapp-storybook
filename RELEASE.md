@@ -1,6 +1,6 @@
 # Release Process
 
-Storybook ships as a Tauri 2 desktop app for macOS, Windows, and Linux.
+Storybook is admitted and launched as a Desktop-supervised Electron local app.
 
 This document describes the manual / GitHub-Actions release flow for the
 standalone single-app layout.
@@ -24,13 +24,11 @@ Semantic Versioning ([semver.org](https://semver.org/)).
   Storybook record.
 - PATCH: bug fix, dependency bump, or refactor with no contract change.
 
-The version string lives in three places that stay in lockstep:
+The version string lives in `package.json`:
 
 | File | Field |
 | --- | --- |
 | `package.json` | `"version"` |
-| `src-tauri/tauri.conf.json` | `"version"` |
-| `src-tauri/Cargo.toml` | `[package].version` |
 
 ## Pre-flight Checklist
 
@@ -52,9 +50,7 @@ pnpm run pack
 ```bash
 NEW_VERSION=0.1.0
 npm version --no-git-tag-version "$NEW_VERSION"
-sed -i '' "s/\"version\": \".*\"/\"version\": \"$NEW_VERSION\"/" src-tauri/tauri.conf.json
-sed -i '' "s/^version = \".*\"/version = \"$NEW_VERSION\"/" src-tauri/Cargo.toml
-git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml CHANGELOG.md
+git add package.json CHANGELOG.md
 git commit -m "release: v$NEW_VERSION"
 git tag -a "v$NEW_VERSION" -m "Storybook v$NEW_VERSION"
 git push origin main

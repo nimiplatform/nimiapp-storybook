@@ -17,7 +17,7 @@ if (!submission.includes('submission_role: developer-submitted-input')) {
 if (!submission.includes('dev_shell_command: pnpm dev:shell')) {
   throw new Error('dev shell command marker missing');
 }
-if (!appIdentity.includes('app_id: nimi.storybook') || !appIdentity.includes('tauri_identifier: nimi.storybook')) {
+if (!appIdentity.includes('app_id: nimi.storybook') || !appIdentity.includes('shell: electron')) {
   throw new Error('app identity projection is missing Storybook identity');
 }
 if (!buildProfile.includes('build_command: pnpm run build')) {

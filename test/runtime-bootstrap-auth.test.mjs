@@ -46,10 +46,12 @@ test('official development path is Desktop-supervised Electron with no app-owned
   assert.equal(PACKAGE.scripts.dev, 'nimi-app dev --shell electron');
   assert.equal(PACKAGE.scripts['dev:shell'], 'nimi-app dev');
   assert.equal(PACKAGE.scripts['dev:electron'], 'nimi-app dev --shell electron');
-  assert.match(MANIFEST, /^permissions: \[\]$/m);
+  assert.match(MANIFEST, /^profile: standalone$/m);
+  assert.match(MANIFEST, /^app_access:\s*\n  - runtime\.consume$/m);
+  assert.doesNotMatch(MANIFEST, /^permissions:/m);
   assert.match(MANIFEST, /local_development:\s*\n  electron:\s*\n    renderer_origin: http:\/\/127\.0\.0\.1:1473/m);
   assert.match(ELECTRON_MAIN, /registerNimiElectronAppBridge/);
-  assert.match(ELECTRON_MAIN, /onProtectedSessionFailure: \(\) => app\.quit\(\)/);
+  assert.doesNotMatch(ELECTRON_MAIN, /onProtectedSessionFailure/);
   assert.match(ELECTRON_PRELOAD, /installNimiElectronRuntimeBridge/);
   assert.doesNotMatch(ELECTRON_MAIN, /remote-debugging|CDP|cdp/i);
 });
@@ -82,19 +84,23 @@ test('active source contains no app registration, credential custody, self-autho
   }
 });
 
-test('generic generation remains typed unavailable until admitted on the standard bridge', () => {
-  assert.match(RUNTIME_PLATFORM_SOURCE, /storybook-generic-runtime-generation-not-admitted/);
-  assert.match(RUNTIME_PLATFORM_SOURCE, /admit_public_local_app_generation_contract/);
-  assert.doesNotMatch(RUNTIME_AI_SOURCE, /requireStorybookRuntimeSubjectUserId/);
+test('authenticated Storybook uses the admitted protected text and AIConfig carrier only', () => {
+  assert.match(RUNTIME_PLATFORM_SOURCE, /status: 'ready'/);
+  assert.match(RUNTIME_PLATFORM_SOURCE, /getStorybookNimiClient\(\)/);
+  assert.match(RUNTIME_AI_SOURCE, /client\.ai\.text\.generateCandidate/);
+  assert.match(RUNTIME_AI_SOURCE, /loadStorybookAIConfig\(client\.aiConfig\)/);
+  assert.doesNotMatch(RUNTIME_AI_SOURCE, /client\.runtime|client\.features|createNimiRuntimeAIModel/);
 });
 
-test('Storybook text binding parser consumes v2 targetRef without retired local ids', () => {
-  const targetRefModelBody = RUNTIME_AI_SOURCE.slice(
-    RUNTIME_AI_SOURCE.indexOf('function targetRefModel'),
-    RUNTIME_AI_SOURCE.indexOf('function schedulingTargetFor'),
-  );
-  assert.match(targetRefModelBody, /profileBindingId/);
-  assert.match(targetRefModelBody, /readinessRef/);
-  assert.doesNotMatch(targetRefModelBody, /profileId/);
-  assert.doesNotMatch(targetRefModelBody, /targetId/);
+test('Storybook resolves portable capability intent without app-owned binding custody', () => {
+  assert.match(RUNTIME_AI_SOURCE, /NimiPortableAppAIConfig/);
+  assert.match(RUNTIME_AI_SOURCE, /capabilityContract === STORYBOOK_TEXT_GENERATE_CAPABILITY_ID/);
+  assert.doesNotMatch(RUNTIME_AI_SOURCE, /connectorId|connectorGrantId|profileBindingId|providerModelId/);
+});
+
+test('session loss remains recoverable through same-host bootstrap retry', () => {
+  assert.doesNotMatch(ELECTRON_MAIN, /onProtectedSessionFailure/);
+  assert.match(AUTH_GATE_SOURCE, /runStorybookBootstrap\(\{ force: true \}\)/);
+  assert.match(AUTH_GATE_SOURCE, /重新检查/);
+  assert.doesNotMatch(BOOTSTRAP_SOURCE, /app\.quit|window\.close/);
 });

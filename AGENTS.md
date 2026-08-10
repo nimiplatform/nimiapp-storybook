@@ -6,7 +6,7 @@
 
 - Canonical Nimi app_id: `nimi.storybook`
 - Product slug: `storybook`
-- Tauri identifier: `nimi.storybook`
+- Electron host app_id: `nimi.storybook`
 - One-line: A genre-neutral interactive narrative app with Studio, Play, and
   an app-owned truth-package Engine.
 - Status: Pre-Alpha, not launched.
@@ -15,13 +15,13 @@
 
 | Layer | Technology | Location |
 |-------|------------|----------|
-| Desktop shell | Tauri 2 | `src-tauri/` |
+| Desktop shell | Electron, Desktop-supervised | `src-electron/` |
 | Frontend | React 19 + Vite 7 | `src/` |
 | Product authority | v2 canonical authority + app-local Storybook Engine | `.nimi/spec/storybook/canonical/**`, `src/storybook/engine/**` |
 | Runtime / auth | Nimi SDK + Kit auth broker | `src/shell/infra/**`, `src/shell/auth/**`, `src/shell/app-shell/**` |
-| AI config | SDK NimiAIConfig + Kit ModelConfig | `src/storybook/ai/storybook-ai-config-store.ts`, `src/shell/ai/**` |
+| AI config | Runtime-owned App AIConfig + Kit ModelConfig | `src/storybook/ai/storybook-ai-config-store.ts`, `src/shell/ai/**` |
 | UI components | `@nimiplatform/kit` | npm dependency via `link:../../nimi/kit` |
-| Dev port | 1473 | `package.json`, `nimi.app.yaml`, `src-tauri/tauri.conf.json` |
+| Dev port | 1473 | `package.json`, `nimi.app.yaml` |
 
 ## Spec Authority & Sync
 
@@ -67,8 +67,8 @@ Before making product changes:
 - Runtime account auth uses a Desktop-supervised local-app session. Desktop and
   the protected carrier own admission, authorization, and credentials;
   Storybook observes public session posture and caller-scoped handles only.
-- AI execution flows only through SDK/Runtime surfaces and an SDK
-  `NimiAIConfig` binding. No provider/model hardcoding, no app-local provider
+- AI execution flows only through protected App Access SDK surfaces and a
+  Runtime-owned App AIConfig. No provider/model hardcoding, no app-local provider
   routing, no fabricated output. Missing binding/runtime fails closed to typed
   unavailable.
 - Storybook memory/run/transcript/feedback data is app-internal and
@@ -108,7 +108,7 @@ Start with: `.nimi/spec/storybook/canonical/`, `src/storybook/engine/`,
 `src/storybook/ai/`, `src/storybook/store/`, `src/storybook/ui/`,
 `src/shell/infra/`, `src/shell/ai/`, `src/shell/app-shell/`, `test/`.
 
-Skip: `node_modules/`, `dist/`, `src-tauri/target/`, `src-tauri/gen/`,
+Skip: `node_modules/`, `dist/`, `dist-electron/`,
 lockfiles, `.nimi/cache/`, `.nimi/local/`, `.nimi/topics/`.
 
 <!-- nimicoding:managed:agents:start -->

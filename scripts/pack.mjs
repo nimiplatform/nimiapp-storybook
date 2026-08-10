@@ -5,7 +5,6 @@ if (!existsSync(join('dist', 'index.html'))) {
   throw new Error('renderer build output missing: run pnpm run build before packing');
 }
 const packageJson = JSON.parse(readFileSync('package.json', 'utf8'));
-const tauriConfig = JSON.parse(readFileSync(join('src-tauri', 'tauri.conf.json'), 'utf8'));
 const manifest = readFileSync('nimi.app.yaml', 'utf8');
 const submission = readFileSync(join('.nimi', 'admission', 'submission.yaml'), 'utf8');
 if (!manifest.includes('manifest_role: submitted-input')) {
@@ -18,9 +17,10 @@ mkdirSync('dist', { recursive: true });
 const packet = {
   packetRole: 'developer-submitted-input',
   packageName: packageJson.name,
-  appVersion: tauriConfig.version,
-  tauriIdentifier: tauriConfig.identifier,
+  appVersion: packageJson.version,
+  shell: 'electron',
   rendererEntry: 'dist/index.html',
+  electronMain: 'dist-electron/main.js',
   manifestPath: 'nimi.app.yaml',
   admissionRequestPath: '.nimi/admission/submission.yaml',
   generatedBy: '@nimiplatform/app-tools',

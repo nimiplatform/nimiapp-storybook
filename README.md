@@ -1,6 +1,6 @@
 # Storybook
 
-Profile: `workspace-app`
+Profile: `standalone`
 
 Storybook is a Nimi App: an agentic interactive narrative product with separated
 `Play`, `Studio`, and a shared app-local `Engine`. It is genre-neutral — not a
@@ -10,7 +10,7 @@ galgame-only, anime-only, adult-only, or one-shot visual-novel generator.
 `.nimi/methodology/authority-authoring.yaml` is the nimicoding-managed
 authoring guide; refresh it with `pnpm exec nimicoding sync --apply`.
 
-`nimi.app.yaml`, permission declarations, pack output, validate output, and local
+`nimi.app.yaml`, App Access declarations, pack output, validate output, and local
 audit output are submitted inputs and pre-submission self-checks only.
 
 ## Surfaces
@@ -30,11 +30,10 @@ audit output are submitted inputs and pre-submission self-checks only.
 
 ## Boundaries
 
-- AI execution is routed only through admitted Runtime/SDK surfaces
-  (`runtime.ai.*` / `runtime.media.*`) resolved from an `AIConfig` binding. No
-  provider/model is hardcoded and there is no app-local provider routing. When no
-  binding/runtime is available, generation returns a typed unavailable state — it
-  never fabricates output.
+- Text execution uses only the protected `ai.text.generateCandidate` App Access
+  surface and Runtime-owned App AIConfig. No provider/model is hardcoded and there
+  is no app-local provider routing. Image generation remains typed unavailable
+  until App Access provides that capability; Storybook never fabricates output.
 - Storybook memory, run state, transcripts, and feedback patches stay app-internal
   and project-scoped. They never mutate Runtime agent memory, Realm world state, or
   shared Nimi ecosystem memory.
@@ -55,8 +54,8 @@ pnpm run pack
 pnpm nimicoding:doctor
 ```
 
-`dev:shell` launches the Tauri shell. The app authenticates through the Runtime
-account browser broker and a developer-registered Runtime app session. Upstream
+`dev:shell` launches the Desktop-supervised Electron shell. The app observes only
+the protected local-app session posture and never owns account login or credentials. Upstream
 Platform/Runtime review owns release descriptors, ordinary visibility, install
 truth, and scope authorization; this scaffold does not mint those outcomes.
 

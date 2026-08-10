@@ -1,9 +1,9 @@
 local_audit_role: pre-submission-self-check
 app_id: nimi.storybook
 scaffold_boundary:
-  auth: runtime-account-browser-broker
-  runtime_session: developer-registered-runtime-app
-  ai_config: sdk-nimi-ai-config-plus-kit-model-config
+  auth: desktop-supervised-local-app-session
+  runtime_session: protected-standard-bridge
+  ai_config: runtime-owned-app-ai-config-plus-kit-model-config
   token_custody: runtime-owned
 forbidden_shortcuts:
   - app-owned-oauth-token-exchange

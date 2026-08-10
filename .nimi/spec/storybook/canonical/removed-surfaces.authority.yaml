@@ -9,7 +9,7 @@ units:
   - id: definition.storybook.removed-surfaces.app-owned-provider-console
     kind: definition
     title: App-owned provider console
-    meaning: An app-owned provider console is Storybook-local provider or model selection UI outside SDK and Kit AI Config.
+    meaning: An app-owned provider console is Storybook-local provider or model selection UI outside Runtime-owned App AIConfig and Kit presentation.
   - id: definition.storybook.removed-surfaces.shared-memory-writer
     kind: definition
     title: Shared memory writer
@@ -32,7 +32,7 @@ units:
     kind: rule
     title: No app-owned provider console
     modality: must_not
-    statement: Storybook product authority or UI exposes provider or model console semantics outside Kit and SDK AI Config.
+    statement: Storybook product authority or UI exposes provider or model console semantics outside Runtime-owned App AIConfig and Kit presentation.
     condition: Whenever Storybook presents or governs model configuration.
     failure: Reject the app-owned provider console and route no model configuration through it.
     relations:
