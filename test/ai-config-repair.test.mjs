@@ -58,11 +58,14 @@ test('Storybook quarantines retired renderer-owned AIConfig without guessing a m
 
 test('Storybook reads and whole-overwrites Runtime-owned portable App AIConfig', async () => {
   let current = appConfig();
+  let revision = 'revision-1';
   const client = {
-    async get() { return current; },
-    async overwrite(capabilities) {
+    async get() { return { config: current, revision, effectiveSelections: [] }; },
+    async overwrite({ capabilities, expectedRevision }) {
+      assert.equal(expectedRevision, revision);
       current = appConfig([...capabilities]);
-      return current;
+      revision = 'revision-2';
+      return { outcome: 'committed', config: current, revision };
     },
   };
   const loaded = await loadStorybookAIConfig(client);
@@ -83,9 +86,21 @@ test('Storybook reads and whole-overwrites Runtime-owned portable App AIConfig',
 test('Storybook rejects a mismatched Runtime App AIConfig owner', async () => {
   const client = {
     async get() {
-      return { owner: { owner: { oneofKind: 'app', app: { appId: 'app.other' } } }, capabilities: [] };
+      return { config: { owner: { owner: { oneofKind: 'app', app: { appId: 'app.other' } } }, capabilities: [] }, revision: 'revision-1', effectiveSelections: [] };
     },
     async overwrite() { throw new Error('not used'); },
   };
   await assert.rejects(loadStorybookAIConfig(client), /exact nimi\.storybook App/);
+});
+
+test('Storybook accepts an unconfigured Runtime snapshot and preserves Runtime conflict rejection', async () => {
+  const client = {
+    async get() { return { config: null, revision: 'revision-1', effectiveSelections: [] }; },
+    async overwrite(input) {
+      assert.equal(input.expectedRevision, 'revision-1');
+      return { outcome: 'conflict', config: appConfig(), revision: 'revision-2', reasonCode: 'AI_CONFIG_REVISION_CONFLICT' };
+    },
+  };
+  assert.equal(await loadStorybookAIConfig(client), null);
+  await assert.rejects(overwriteStorybookAIConfig([], { client }), /Runtime revision changed/);
 });

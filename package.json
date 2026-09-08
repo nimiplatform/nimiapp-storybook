@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@10.32.1",
+  "packageManager": "pnpm@10.34.5",
   "engines": {
     "node": ">=24.0.0",
     "pnpm": ">=10.0.0"
@@ -25,26 +25,26 @@
     "check": "pnpm run typecheck && pnpm run test && pnpm run lint",
     "validate": "node scripts/validate.mjs",
     "local-audit": "node scripts/local-audit.mjs",
-    "pack": "pnpm run build && node scripts/pack.mjs",
+    "pack": "nimi-app pack",
     "nimicoding": "nimicoding",
     "nimicoding:doctor": "nimicoding doctor",
     "spec:authority:check": "nimicoding authority check .nimi/spec",
-    "spec:authority:compile": "nimicoding authority compile .nimi/spec"
+    "spec:authority:compile": "nimicoding authority compile .nimi/spec",
+    "sync": "nimi-app sync",
+    "postinstall": "install-electron"
   },
   "dependencies": {
-    "@nimiplatform/kit": "link:../../nimi/kit",
-    "@nimiplatform/sdk": "link:../../nimi/sdks/typescript",
     "i18next": "^25.10.10",
     "lucide-react": "^0.577.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-i18next": "^16.6.6",
-    "zustand": "^5.0.13"
+    "zustand": "^5.0.13",
+    "@nimiplatform/sdk": "^0.9.1",
+    "@nimiplatform/kit": "^0.5.1"
   },
   "devDependencies": {
-    "@nimiplatform/app-tools": "link:../../nimi/app-tools",
     "@eslint/js": "^10.0.1",
-    "@nimiplatform/nimi-coding": "0.5.0",
     "@tailwindcss/vite": "^4.3.0",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.14",
@@ -57,7 +57,9 @@
     "tailwindcss": "^4.3.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.59.4",
-    "vite": "^7.2.4"
+    "vite": "^7.3.6",
+    "@nimiplatform/app-tools": "^0.2.8",
+    "@nimiplatform/nimi-coding": "0.6.1"
   },
   "author": "Nimi Team",
   "license": "Apache-2.0"

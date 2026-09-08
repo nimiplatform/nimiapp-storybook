@@ -72,7 +72,8 @@ export async function loadStorybookAIConfig(
 ): Promise<NimiPortableAppAIConfig | null> {
   repairStorybookAIConfigStorage();
   try {
-    return requireStorybookAIConfigOwner(await client.get());
+    const snapshot = await client.get();
+    return snapshot.config ? requireStorybookAIConfigOwner(snapshot.config) : null;
   } catch (error) {
     if (isAIConfigNotFound(error)) return null;
     throw error;
@@ -87,14 +88,17 @@ export async function overwriteStorybookAIConfig(
   } = {},
 ): Promise<NimiPortableAppAIConfig> {
   const client = options.client ?? getStorybookNimiClient().aiConfig;
+  const snapshot = await client.get();
+  const current = snapshot.config ? requireStorybookAIConfigOwner(snapshot.config) : null;
   const expectedBaseVersion = options.expectedBaseVersion?.trim();
   if (expectedBaseVersion) {
-    const current = await loadStorybookAIConfig(client);
     if (versionStorybookAIConfig(current) !== expectedBaseVersion) {
       throw new Error('AIConfig CAS conflict: baseVersion is stale');
     }
   }
-  return requireStorybookAIConfigOwner(await client.overwrite(capabilities));
+  const result = await client.overwrite({ expectedRevision: snapshot.revision, capabilities });
+  if (result.outcome === 'conflict') throw new Error('AIConfig CAS conflict: Runtime revision changed');
+  return requireStorybookAIConfigOwner(result.config);
 }
 
 export function versionStorybookAIConfig(config: NimiPortableAppAIConfig | null): string {

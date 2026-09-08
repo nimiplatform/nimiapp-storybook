@@ -56,7 +56,7 @@ export function resolveStorybookTextIntent(
   const intent = config?.capabilities.find(
     (entry) => entry.capabilityContract === STORYBOOK_TEXT_GENERATE_CAPABILITY_ID,
   );
-  if (!intent) {
+  if (!intent || (intent.route.oneofKind !== 'local' && intent.route.oneofKind !== 'cloud')) {
     return storybookAIUnavailable(
       'text.generate',
       'ai-binding-missing',
