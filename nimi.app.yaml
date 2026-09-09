@@ -1,7 +1,7 @@
 schema_version: 1
 app_id: nimi.storybook
 display_name: Storybook
-version: 0.1.1
+version: 0.1.2
 profile: standalone
 manifest_role: submitted-input
 app_access:

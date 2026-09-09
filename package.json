@@ -1,6 +1,6 @@
 {
   "name": "nimiapp-storybook",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.34.5",
@@ -23,7 +23,7 @@
     "lint": "pnpm run typecheck && eslint . --max-warnings 0",
     "test": "node --test test/*.test.mjs",
     "check": "pnpm run typecheck && pnpm run test && pnpm run lint",
-    "validate": "node scripts/validate.mjs",
+    "validate": "nimi-app check",
     "local-audit": "node scripts/local-audit.mjs",
     "pack": "nimi-app pack",
     "nimicoding": "nimicoding",
