@@ -46,6 +46,7 @@ function chunkForModule(id: string): string | undefined {
 }
 
 export default defineConfig({
+  base: './',
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: [

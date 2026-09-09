@@ -7,7 +7,8 @@ cargo_package_name: nimiapp-storybook-shell
 tauri_identifier: ai.nimi.apps.nimi.storybook
 package_author: Nimi Team
 submission_role: developer-submitted-input
-capability_contract_refs: []
+capability_contract_refs:
+  - text.generate
 required_standardized_feature_refs: []
 storage_policy:
   kind: nimi-mediated-default
@@ -20,7 +21,7 @@ support_manifest:
   user_visible_issue_categories:
     - startup
     - runtime
-  escalation_path: README.md#support
+  escalation_path: https://github.com/nimiplatform/nimiapp-storybook/issues
   kill_switch_visibility: visible
   recovery_instructions: Restart the App from Nimi. If the problem persists, reinstall the current admitted release.
 review_inputs:

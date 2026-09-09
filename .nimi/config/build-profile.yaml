@@ -1,8 +1,8 @@
 build_profile_ref: electron-packager-pnpm-vite
 toolchain_version: node>=24;pnpm>=10;electron=42
-build_command: pnpm run build
+build_command: pnpm run build:electron:production
 test_command: pnpm run test
-output_path: dist
+output_path: dist-electron-package
 shell_output_path: dist-electron
 lockfile_path: pnpm-lock.yaml
 lockfile_policy: author-install-generates-lockfile
@@ -11,5 +11,7 @@ targets:
   windows-x86_64:
     os: windows
     arch: x86_64
-    build_command: pnpm run build
+    build_command: pnpm run build:electron:production
+    payload_path: dist-electron-package/nimiapp-storybook-shell-win32-x64
+    runtime_entry: payload/nimiapp-storybook-shell.exe
 profile_role: developer-workflow-input

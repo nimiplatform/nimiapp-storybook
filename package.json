@@ -31,7 +31,8 @@
     "spec:authority:check": "nimicoding authority check .nimi/spec",
     "spec:authority:compile": "nimicoding authority compile .nimi/spec",
     "sync": "nimi-app sync",
-    "postinstall": "install-electron"
+    "postinstall": "install-electron",
+    "build:electron:production": "node scripts/clean-electron-production.mjs && pnpm run build && node scripts/package-electron-production.mjs"
   },
   "dependencies": {
     "i18next": "^25.10.10",
@@ -44,6 +45,7 @@
     "@nimiplatform/kit": "^0.5.1"
   },
   "devDependencies": {
+    "@electron/packager": "^20.3.0",
     "@eslint/js": "^10.0.1",
     "@tailwindcss/vite": "^4.3.0",
     "@types/node": "^24.10.1",
@@ -58,9 +60,10 @@
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.59.4",
     "vite": "^7.3.6",
-    "@nimiplatform/app-tools": "^0.2.8",
+    "@nimiplatform/app-tools": "^0.2.9",
     "@nimiplatform/nimi-coding": "0.6.1"
   },
   "author": "Nimi Team",
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "main": "dist-electron/main.js"
 }
