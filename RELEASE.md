@@ -5,14 +5,25 @@ Storybook is admitted and launched as a Desktop-supervised Electron local app.
 This document describes the manual / GitHub-Actions release flow for the
 standalone single-app layout.
 
+The macOS bundle displays **Storybook** and derives its ICNS icon from
+`assets/app-icon.png`. Its internal `.app` path and executable remain
+`nimiapp-storybook-shell`. The packaging hook sets display metadata after
+Electron Packager's name rewrite and before ad-hoc signing. Ad-hoc sealing is
+not Developer ID signing or notarization; package checks do not establish
+platform admission or installed-app acceptance.
+
 ## Triggers
 
 1. Tag push: push an annotated tag matching `vX.Y.Z` or `vX.Y.Z-rc.N` to
    `main`.
-2. Manual dispatch: run the release workflow with a semver version and a
-   publish flag.
+2. Manual dispatch: run the workflow on the selected ref with no inputs. It
+   builds a development candidate from that ref's `package.json` version and
+   uploads the candidate artifacts; it does not publish a GitHub Release.
 
-Manual dispatch should default to dry-run until Platform admission is complete.
+Only tag pushes enter the production release job. The tag must exactly match
+`v` plus the package version, be annotated, and point to a commit on the
+repository's canonical default branch. Production preflight and platform
+admission remain separate requirements.
 
 ## Versioning
 

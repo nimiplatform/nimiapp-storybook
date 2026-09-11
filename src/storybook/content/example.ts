@@ -3,12 +3,16 @@
 // rule-of-truth -> projection -> prepared-package path so Play has a valid,
 // zero-configuration entry out of the box.
 
-import { makeTruthRef } from './ids.js';
-import { type Result } from './failure.js';
-import { type StorybookTruthPackage } from './truth.js';
-import { type PlayableChapter } from './run.js';
-import { attachPrebuiltArtifact, attachFallbackArtifact, createAssetSpec } from './assets.js';
-import { buildPreparedPackage, type PreparedStorybookPackage } from './prepared-package.js';
+import { makeTruthRef } from '../engine/ids.js';
+import { type Result } from '../engine/failure.js';
+import { type StorybookTruthPackage } from '../engine/truth.js';
+import { type PlayableChapter } from '../engine/run.js';
+import {
+  attachPrebuiltArtifact,
+  attachFallbackArtifact,
+  createAssetSpec,
+} from '../engine/assets.js';
+import { buildPreparedPackage, type PreparedStorybookPackage } from '../engine/prepared-package.js';
 
 const PROJECT_ID = 'example-foggy-harbor';
 
@@ -46,7 +50,16 @@ export function buildExampleTruthPackage(now: string): StorybookTruthPackage {
         chapterId: 'ch1',
         text: '灯塔内潮湿而安静。值班记录的最后一页被人撕掉了，桌上有未冷的茶。',
         choices: [
-          { id: 'c3', label: '收起茶杯作为线索，下楼离开', targetNodeId: 'nEnd', effects: [{ op: 'add-var', target: 'clues', value: 1 }, { op: 'award-achievement', target: 'first-clue' }], source: 'authored' },
+          {
+            id: 'c3',
+            label: '收起茶杯作为线索，下楼离开',
+            targetNodeId: 'nEnd',
+            effects: [
+              { op: 'add-var', target: 'clues', value: 1 },
+              { op: 'award-achievement', target: 'first-clue' },
+            ],
+            source: 'authored',
+          },
         ],
       },
       {
@@ -54,7 +67,16 @@ export function buildExampleTruthPackage(now: string): StorybookTruthPackage {
         chapterId: 'ch1',
         text: '老板娘压低声音：「昨晚我看见有第二个人上了灯塔。」',
         choices: [
-          { id: 'c4', label: '记下证词，前往灯塔', targetNodeId: 'nEnd', effects: [{ op: 'add-var', target: 'clues', value: 1 }, { op: 'award-achievement', target: 'first-clue' }], source: 'authored' },
+          {
+            id: 'c4',
+            label: '记下证词，前往灯塔',
+            targetNodeId: 'nEnd',
+            effects: [
+              { op: 'add-var', target: 'clues', value: 1 },
+              { op: 'award-achievement', target: 'first-clue' },
+            ],
+            source: 'authored',
+          },
         ],
       },
       {
@@ -72,7 +94,14 @@ export function buildExampleTruthPackage(now: string): StorybookTruthPackage {
     id: 'example-truthpkg',
     projectId: PROJECT_ID,
     version: 1,
-    governance: { lifecycle: 'play-ready', reviewState: 'reviewed', owner: 'storybook-official', buildScope: 'app-local', createdAt: now, updatedAt: now },
+    governance: {
+      lifecycle: 'play-ready',
+      reviewState: 'reviewed',
+      owner: 'storybook-official',
+      buildScope: 'app-local',
+      createdAt: now,
+      updatedAt: now,
+    },
     rules: [
       {
         ref: makeTruthRef(PROJECT_ID, 'world-rule', 'no-supernatural'),
@@ -153,7 +182,13 @@ export function buildExampleTruthPackage(now: string): StorybookTruthPackage {
       consistencyAnchors: ['统一的雾气厚度', '灯塔暖黄作为唯一暖色锚点'],
     },
     divergences: [],
-    branchTopology: { ref: topoRef, startChapterId: 'ch1', chapterIds: ['ch1'], routes: [], switchPoints: [] },
+    branchTopology: {
+      ref: topoRef,
+      startChapterId: 'ch1',
+      chapterIds: ['ch1'],
+      routes: [],
+      switchPoints: [],
+    },
     stateEndingMatrix: {
       ref: matrixRef,
       variables: [{ id: 'clues', label: '线索数', initial: 0 }],
@@ -165,28 +200,63 @@ export function buildExampleTruthPackage(now: string): StorybookTruthPackage {
     assets: [
       // prebuilt usable asset (no generation required) ...
       attachPrebuiltArtifact(
-        createAssetSpec({ ref: bgAssetRef, kind: 'background', description: '雾港码头夜景', requiredness: 'optional', now }),
+        createAssetSpec({
+          ref: bgAssetRef,
+          kind: 'background',
+          description: '雾港码头夜景',
+          requiredness: 'optional',
+          now,
+        }),
         'asset://example/bg-harbor.png',
         'image/png',
         now,
       ),
       // ... and a fallback-state asset to demonstrate explicit fallback provenance.
       attachFallbackArtifact(
-        createAssetSpec({ ref: portraitAssetRef, kind: 'character-portrait', description: '码头老板娘立绘', requiredness: 'optional', now }),
+        createAssetSpec({
+          ref: portraitAssetRef,
+          kind: 'character-portrait',
+          description: '码头老板娘立绘',
+          requiredness: 'optional',
+          now,
+        }),
         'asset://example/portrait-keeper-fallback.png',
         'image/png',
         now,
       ),
     ],
     evidence: [
-      { id: 'evid-bible', truthRef: bibleRef, kind: 'edit', sourceRef: 'official-author', note: '官方示例 Bible 由作者直接撰写。' },
-      { id: 'evid-scene', truthRef: sceneRef, kind: 'edit', sourceRef: 'official-author', note: '官方示例场景框架。' },
+      {
+        id: 'evid-bible',
+        truthRef: bibleRef,
+        kind: 'edit',
+        sourceRef: 'official-author',
+        note: '官方示例 Bible 由作者直接撰写。',
+      },
+      {
+        id: 'evid-scene',
+        truthRef: sceneRef,
+        kind: 'edit',
+        sourceRef: 'official-author',
+        note: '官方示例场景框架。',
+      },
     ],
     derivations: [
-      { id: 'deriv-bible', kind: 'adaptation', fromRefs: [sceneRef], toRef: bibleRef, note: '由场景框架派生 Bible。' },
+      {
+        id: 'deriv-bible',
+        kind: 'adaptation',
+        fromRefs: [sceneRef],
+        toRef: bibleRef,
+        note: '由场景框架派生 Bible。',
+      },
     ],
     projectionInputs: [
-      { id: 'proj-play', projectionType: 'play', governingTruthRefs: [bibleRef, sceneRef, castRef, topoRef], validationStatus: 'valid' },
+      {
+        id: 'proj-play',
+        projectionType: 'play',
+        governingTruthRefs: [bibleRef, sceneRef, castRef, topoRef],
+        validationStatus: 'valid',
+      },
     ],
     feedback: [],
     compat: [],
@@ -195,5 +265,9 @@ export function buildExampleTruthPackage(now: string): StorybookTruthPackage {
 }
 
 export function buildExamplePreparedPackage(now: string): Result<PreparedStorybookPackage> {
-  return buildPreparedPackage({ pkg: buildExampleTruthPackage(now), producer: 'storybook-official', now });
+  return buildPreparedPackage({
+    pkg: buildExampleTruthPackage(now),
+    producer: 'storybook-official',
+    now,
+  });
 }

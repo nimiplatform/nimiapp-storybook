@@ -2,10 +2,10 @@ import type { ModelConfigCopy } from '@nimiplatform/kit/features/model-config';
 
 export const STORYBOOK_MODEL_CONFIG_COPY: ModelConfigCopy = {
   title: 'AI 模型',
-  description: '配置 Storybook 文本生成的可移植 Runtime 意图。',
+  description: '为故事改编和角色对话选择 AI。',
   backLabel: '返回',
   activeModelLabel: '当前配置',
-  activeModelHint: '查看或更改 Runtime 路由意图',
+  activeModelHint: '选择故事创作使用的模型',
   activeModelConfiguredLabel: '已配置',
   activeModelSetupPendingLabel: '待配置',
   modelPickerTitle: '选择 Runtime 路由',
@@ -49,7 +49,7 @@ export const STORYBOOK_MODEL_CONFIG_COPY: ModelConfigCopy = {
   ),
   capabilityDescription: (capabilityContract, fallback) => (
     capabilityContract === 'text.generate'
-      ? '用于 Bible 草案、场景文本和选择建议。'
+      ? '用于故事改编、分支编排和角色即兴对话。'
       : fallback
   ),
 };

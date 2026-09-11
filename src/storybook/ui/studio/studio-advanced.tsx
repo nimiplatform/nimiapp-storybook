@@ -18,6 +18,7 @@ import {
 } from '../../engine/index.js';
 import { runBibleDraft } from '../../ai/storybook-runtime.js';
 import { type StoredProjectRecord } from '../../store/storybook-store.js';
+import { projectEditor } from '../../store/content-editors.js';
 
 // Studio editor + scoped regeneration + cross-product diagnostics (waves 12 & 13).
 // Edits route through applyEdit (version bump + projection stale + undo/redo lineage),
@@ -30,7 +31,7 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
-export function StudioAdvanced({ record, onUpdate }: { record: StoredProjectRecord; onUpdate: (record: StoredProjectRecord) => void }) {
+export function StudioAdvanced({ record, busy, onUpdate }: { record: StoredProjectRecord; busy: boolean; onUpdate: (change: (current: StoredProjectRecord) => StoredProjectRecord) => Promise<void> }) {
   const [log, setLog] = useState<EditLog>(() => createEditLog(record.project.id));
   const [worldDraft, setWorldDraft] = useState(record.truthPackage.bible?.worldSummary ?? '');
   const [editError, setEditError] = useState<string | null>(null);
@@ -44,7 +45,7 @@ export function StudioAdvanced({ record, onUpdate }: { record: StoredProjectReco
   const diagnostics = runFullDiagnostics({ pkg: record.truthPackage });
   const findings = flattenDiagnostics(diagnostics);
 
-  function commitEdit() {
+  async function commitEdit() {
     setEditError(null);
     const pkg = record.truthPackage;
     if (!pkg.bible) { setEditError('尚无 Bible 可编辑。'); return; }
@@ -56,38 +57,54 @@ export function StudioAdvanced({ record, onUpdate }: { record: StoredProjectReco
       now: nowIso(),
     });
     if (!result.ok) { setEditError(`${result.code}: ${result.message}`); return; }
+    await onUpdate(current => {
+      if (current.truthPackage.version !== pkg.version) throw new Error('设定已更新，请重新查看后提交。你的输入仍保留。');
+      return { ...current, truthPackage: result.value.pkg, project: { ...current.project, updatedAt: nowIso() } };
+    });
     setLog(result.value.log);
-    onUpdate({ ...record, truthPackage: result.value.pkg, project: { ...record.project, updatedAt: nowIso() } });
   }
 
-  function doUndo() {
+  async function doUndo() {
     const next = undoEdit(log, record.truthPackage);
+    await onUpdate(current => {
+      if (current.truthPackage.version !== record.truthPackage.version) throw new Error('设定已更新，请重新查看后撤销。');
+      return { ...current, truthPackage: next.pkg };
+    });
     setLog(next.log);
     setWorldDraft(next.pkg.bible?.worldSummary ?? '');
-    onUpdate({ ...record, truthPackage: next.pkg });
   }
 
-  function doRedo() {
+  async function doRedo() {
     const next = redoEdit(log, record.truthPackage);
+    await onUpdate(current => {
+      if (current.truthPackage.version !== record.truthPackage.version) throw new Error('设定已更新，请重新查看后重做。');
+      return { ...current, truthPackage: next.pkg };
+    });
     setLog(next.log);
     setWorldDraft(next.pkg.bible?.worldSummary ?? '');
-    onUpdate({ ...record, truthPackage: next.pkg });
   }
 
-  function requestRegen() {
+  async function requestRegen() {
     const feedbackRefs = record.memory.feedbackPatches.map((p) => p.id);
     const result = createRegenerationRequest({ pkg: record.truthPackage, scope, targetRef: target, reason: '创作者请求范围内重生成', feedbackPatchRefs: feedbackRefs, now: nowIso() });
     if (!result.ok) { nimiToast.danger(`${result.code}: ${result.message}`); return; }
     // PERSIST the request (queued) on the project — not a transient notice.
-    onUpdate({ ...record, regenerationRequests: [...regenerationRequests, result.value] });
+    await onUpdate(current => ({ ...current, regenerationRequests: [...(current.regenerationRequests ?? []), result.value] }));
     nimiToast.success(`已入队重生成请求（${result.value.scope} @ ${result.value.targetRef}）。`);
   }
 
-  function replaceRequest(next: RegenerationRequest, patch: Partial<StoredProjectRecord> = {}) {
-    onUpdate({ ...record, ...patch, regenerationRequests: regenerationRequests.map((r) => (r.id === next.id ? next : r)) });
+  async function replaceRequest(next: RegenerationRequest, patch: Partial<StoredProjectRecord> = {}) {
+    await onUpdate(current => {
+      if (patch.truthPackage && current.truthPackage.version !== record.truthPackage.version) throw new Error('生成期间设定已更新，请基于新设定重试。');
+      return { ...current, ...patch, regenerationRequests: (current.regenerationRequests ?? []).map((r) => (r.id === next.id ? next : r)) };
+    });
   }
 
   async function executeRegen(request: RegenerationRequest) {
+    return projectEditor(record.project.id).run('regeneration', () => performRegen(request));
+  }
+
+  async function performRegen(request: RegenerationRequest) {
     if (request.scope === 'bible-slice') {
       // REAL execution: regenerate the bible world summary, consuming accepted feedback,
       // and write it back to truth (version bump). Fail-closed on AI unavailable.
@@ -98,21 +115,21 @@ export function StudioAdvanced({ record, onUpdate }: { record: StoredProjectReco
       const outcome = await runBibleDraft({ projectId: record.project.id, premise, styleHint });
       setRegenBusy(false);
       if (!outcome.ok) {
-        replaceRequest(markRegeneration(request, 'failed', `${outcome.message}（${outcome.actionHint}）`, nowIso()));
+        await replaceRequest(markRegeneration(request, 'failed', `${outcome.message}（${outcome.actionHint}）`, nowIso()));
         nimiToast.danger('重生成失败：AI 不可用。已标记为 failed（不伪造成功）。');
         return;
       }
       const applied = applyBibleDraft(record.truthPackage, { worldSummary: outcome.value }, nowIso());
       if (!applied.ok) {
-        replaceRequest(markRegeneration(request, 'failed', `${applied.code}: ${applied.message}`, nowIso()));
+        await replaceRequest(markRegeneration(request, 'failed', `${applied.code}: ${applied.message}`, nowIso()));
         return;
       }
-      replaceRequest(markRegeneration(request, 'executed', '已用采纳偏好重写 Bible 世界概述并写回真值（版本已 bump）。', nowIso()), { truthPackage: applied.value });
+      await replaceRequest(markRegeneration(request, 'executed', '已用采纳偏好重写 Bible 世界概述并写回真值（版本已 bump）。', nowIso()), { truthPackage: applied.value });
       nimiToast.success('已执行：Bible 世界概述基于反馈重生成并写回真值。');
       return;
     }
     // Other scopes: honest deferral — queued, not faked as done.
-    replaceRequest(markRegeneration(request, 'deferred', '该范围的自动执行尚未接入；保持入队，等待后续生成接入或人工处理。', nowIso()));
+    await replaceRequest(markRegeneration(request, 'deferred', '该范围的自动执行尚未接入；保持入队，等待后续生成接入或人工处理。', nowIso()));
     nimiToast.info(`范围「${request.scope}」自动执行尚未接入，已显式标记 deferred（非伪成功）。`);
   }
 
@@ -135,9 +152,9 @@ export function StudioAdvanced({ record, onUpdate }: { record: StoredProjectReco
         </div>
         {editError ? <InlineAlert tone="warning"><div className="runtime-alert-copy"><strong>编辑失败</strong><span>{editError}</span></div></InlineAlert> : null}
         <div className="sb-actions">
-          <Button type="button" tone="primary" size="sm" onClick={commitEdit}>提交编辑</Button>
-          <Button type="button" tone="secondary" size="sm" disabled={!canUndo(log)} onClick={doUndo}>撤销</Button>
-          <Button type="button" tone="secondary" size="sm" disabled={!canRedo(log)} onClick={doRedo}>重做</Button>
+          <Button type="button" tone="primary" size="sm" onClick={() => void commitEdit().catch(e => setEditError(e instanceof Error ? e.message : '保存失败。'))}>提交编辑</Button>
+          <Button type="button" tone="secondary" size="sm" disabled={!canUndo(log)} onClick={() => void doUndo().catch(e => setEditError(e instanceof Error ? e.message : '保存失败。'))}>撤销</Button>
+          <Button type="button" tone="secondary" size="sm" disabled={!canRedo(log)} onClick={() => void doRedo().catch(e => setEditError(e instanceof Error ? e.message : '保存失败。'))}>重做</Button>
         </div>
       </Surface>
 
@@ -160,7 +177,7 @@ export function StudioAdvanced({ record, onUpdate }: { record: StoredProjectReco
             <input id="sb-regen-target" className="sb-input" value={target} onChange={(event) => setTarget(event.target.value)} placeholder="例如：ch1 或 truth:...:chapter:ch1" />
           </div>
         </div>
-        <div className="sb-actions"><Button type="button" tone="secondary" size="sm" onClick={requestRegen}>入队重生成请求</Button></div>
+        <div className="sb-actions"><Button type="button" tone="secondary" size="sm" onClick={() => void requestRegen().catch(e => setEditError(e instanceof Error ? e.message : '保存失败。'))}>入队重生成请求</Button></div>
 
         {regenerationRequests.length > 0 ? (
           <div className="sb-grid">
@@ -174,7 +191,7 @@ export function StudioAdvanced({ record, onUpdate }: { record: StoredProjectReco
                 {req.resolutionNote ? <p className="sb-muted">{req.resolutionNote}</p> : null}
                 {req.status === 'queued' ? (
                   <div className="sb-actions">
-                    <Button type="button" tone="primary" size="sm" loading={regenBusy} onClick={() => void executeRegen(req)}>执行</Button>
+                    <Button type="button" tone="primary" size="sm" loading={busy || regenBusy} onClick={() => void executeRegen(req).catch(e => { setRegenBusy(false); setEditError(e instanceof Error ? e.message : '保存失败。'); })}>执行</Button>
                   </div>
                 ) : null}
               </Surface>

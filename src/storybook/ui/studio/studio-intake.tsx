@@ -1,185 +1,198 @@
-import { useState } from 'react';
-import { Surface, Button, StatusBadge, InlineAlert } from '@nimiplatform/kit/ui';
-import {
-  convertIntake,
-  seedTruthPackage,
-  mintId,
-  type IntakeInput,
-  type IntakeKind,
-  type StorybookProject,
-  type StorybookProjectMode,
-  type Role,
-} from '../../engine/index.js';
-import { createProjectMemory } from '../../engine/memory.js';
-import { saveProject } from '../../store/storybook-store.js';
+import { useRef, useState } from 'react';
+import { ArrowLeft, ArrowRight, Feather, FileText, Sparkles, Upload } from 'lucide-react';
+import { getIntakeDraft } from '../../store/storybook-store.js';
+import { intakeEditor } from '../../store/content-editors.js';
+import { submitIntake } from '../../store/intake-submission.js';
+import { useEditorSession } from '../use-editor-session.js';
 
-// Structured intake. Every admitted input is normalized into structured Storybook
-// records BEFORE any generation/preview. Conversion is fail-closed: invalid or
-// over-limit input shows a typed reason and creates nothing.
-
-const KIND_OPTIONS: { value: IntakeKind; label: string }[] = [
-  { value: 'manual-setting', label: '手动设定' },
-  { value: 'original-scenario', label: '原创情景' },
-  { value: 'persona-seed', label: 'Persona Seed' },
-  { value: 'short-fiction', label: '短篇小说（精简节选）' },
-  { value: 'document-text', label: '文档文本' },
-  { value: 'structured-notes', label: '结构化笔记' },
+const SEEDS = [
+  {
+    label: '一个不可能的来电',
+    text: '凌晨三点，你接到自己的来电。电话那头的声音说，十分钟后会有人敲门，无论如何都不要打开。可门外传来的，是你已经去世三年的母亲的声音。她喊的是那个只有她知道的小名。',
+  },
+  {
+    label: '记忆的旧书店',
+    text: '这家旧书店出售的不是书，而是别人遗忘的记忆。你一直只是店里的整理员，直到某天，你在一叠待销毁的记忆中看到了自己的童年。它被标注为：从未发生。老板今天恰好不在。',
+  },
+  {
+    label: '重逢的另一种可能',
+    text: '你和十年未见的朋友约在老地方。对方准时出现，穿着十年前告别时的同一件外套。他不知道你们曾经分别，也不知道你们因为哪一句话再没有联系。桌上只有两杯刚泡好的茶。',
+  },
 ];
-
-const MODE_BY_KIND: Record<IntakeKind, StorybookProjectMode> = {
-  'manual-setting': 'manual-setting',
-  'original-scenario': 'original-scenario',
-  'persona-seed': 'persona-seed',
-  'short-fiction': 'source-backed',
-  'document-text': 'document-backed',
-  'structured-notes': 'structured-notes',
-};
-
-function lines(value: string): string[] {
-  return value.split('\n').map((s) => s.trim()).filter(Boolean);
-}
-
-function parseRoles(value: string): Role[] {
-  return lines(value).map((line, index) => {
-    const [name, summary] = line.split('|').map((s) => s.trim());
-    return { id: `role-${index}`, name: name || `角色${index + 1}`, summary: summary || '' };
-  });
-}
-
-function nowIso(): string {
-  return new Date().toISOString();
-}
-
-export function StudioIntake({ onCreated, onCancel }: { onCreated: (projectId: string) => void; onCancel: () => void }) {
-  const [kind, setKind] = useState<IntakeKind>('original-scenario');
-  const [name, setName] = useState('');
-  const [text, setText] = useState('');
-  const [secondary, setSecondary] = useState('');
-  const [tertiary, setTertiary] = useState('');
+const DIRECTIONS = ['忠于原文', '悬疑感更强', '更温柔的余韵', '让选择更两难'];
+export function StudioIntake({
+  onCreated,
+  onCancel,
+}: {
+  onCreated: (projectId: string) => void;
+  onCancel: () => void;
+}) {
+  const editor = useEditorSession(intakeEditor());
+  const draft = editor.value;
+  const submitting = Boolean(editor.operation);
   const [error, setError] = useState<string | null>(null);
-
-  function buildInput(projectId: string): IntakeInput | { error: string } {
-    switch (kind) {
-      case 'manual-setting':
-        return { kind, projectId, background: text, roles: parseRoles(secondary), rules: lines(tertiary), playerPosition: '参与者视角', contentBoundaries: [] };
-      case 'original-scenario':
-        return { kind, projectId, premise: text, cast: parseRoles(secondary).map((r) => ({ name: r.name, summary: r.summary })), rules: lines(tertiary) };
-      case 'persona-seed':
-        return { kind, projectId, card: { name: secondary.trim() || name.trim(), persona: text, voice: tertiary.trim() || undefined } };
-      case 'short-fiction':
-        return { kind, projectId, title: secondary.trim() || undefined, text };
-      case 'document-text':
-        return { kind, projectId, title: secondary.trim() || undefined, text };
-      case 'structured-notes':
-        return {
-          kind,
-          projectId,
-          notes: lines(text).map((line) => {
-            const [label, ...rest] = line.split(/[:：]/);
-            return { label: (label || '').trim(), value: rest.join(':').trim() };
-          }),
-        };
-      default:
-        return { error: '不支持的录入类型。' };
-    }
+  const fileInput = useRef<HTMLInputElement>(null);
+  function editDraft(change: Partial<typeof draft>) {
+    if (editor.session.getSnapshot().operation) return;
+    void editor.session.update(current => ({ ...current, ...change })).catch(() => undefined);
   }
-
-  function submit() {
+  async function submit() {
     setError(null);
-    if (!name.trim()) {
-      setError('请填写项目名称。');
-      return;
-    }
-    const projectId = mintId('proj');
-    const built = buildInput(projectId);
-    if ('error' in built) {
-      setError(built.error);
-      return;
-    }
-    const conversion = convertIntake(built, nowIso());
-    if (!conversion.ok) {
-      setError(`录入转换失败（${conversion.code}）：${conversion.message}`);
-      return;
-    }
-    const project: StorybookProject = {
-      id: projectId,
-      name: name.trim(),
-      mode: MODE_BY_KIND[kind],
-      truthPackageId: mintId('truthpkg'),
-      createdAt: nowIso(),
-      updatedAt: nowIso(),
-    };
-    const truthPackage = seedTruthPackage(project, conversion.value, nowIso());
-    saveProject({ project, truthPackage, memory: createProjectMemory(projectId) });
-    onCreated(projectId);
+    try { onCreated(await submitIntake()); }
+    catch (e) { setError(e instanceof Error ? e.message : '草稿未能保存，请重试。'); }
   }
-
-  const textLabel =
-    kind === 'manual-setting' ? '背景设定'
-      : kind === 'original-scenario' ? '前提 / 情景种子'
-        : kind === 'persona-seed' ? '人物设定（persona）'
-          : kind === 'structured-notes' ? '结构化笔记（每行 “标签: 值”）'
-            : '源文本（精简节选，≤ 20000 字符）';
-
-  const secondaryLabel =
-    kind === 'manual-setting' || kind === 'original-scenario' ? '角色（每行 “名字|简介”）'
-      : kind === 'persona-seed' ? '角色名'
-        : '标题（可选）';
-
-  const tertiaryLabel =
-    kind === 'manual-setting' || kind === 'original-scenario' ? '规则（每行一条）'
-      : kind === 'persona-seed' ? '语气（可选）'
-        : '';
-
   return (
-    <Surface className="sb-section" material="glass-regular" tone="panel">
-      <div className="sb-section__head">
-        <div>
-          <h2>新建项目 · 结构化录入</h2>
-          <p>选择来源类型并填写内容。提交后会先转化为结构化记录（场景框架 / 角色候选 / Bible 草案），不直接当作长提示词使用。</p>
-        </div>
-        <Button type="button" tone="secondary" size="sm" onClick={onCancel}>取消</Button>
+    <div className="sb-page sb-intake">
+      <header className="sb-page-top">
+        <button className="sb-quiet-button" onClick={() => { void editor.session.flushForNavigation().then(onCancel).catch(() => undefined); }}>
+          <ArrowLeft size={16} />
+          回到创作间
+        </button>
+        <span className="sb-eyebrow">FROM WORDS TO WORLDS</span>
+      </header>
+      <div className="sb-intake-heading">
+        <span className="sb-intake-icon">
+          <Feather size={26} strokeWidth={1.4} />
+        </span>
+        <h1>每个故事，都有另一种可能。</h1>
+        <p>给我一段文字。我们一起把它变成一个可以走进去的世界。</p>
       </div>
-
-      <div className="sb-form">
-        <div className="sb-field">
-          <label htmlFor="sb-kind">来源类型</label>
-          <select id="sb-kind" className="sb-select" value={kind} onChange={(event) => setKind(event.target.value as IntakeKind)}>
-            {KIND_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>{option.label}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="sb-field">
-          <label htmlFor="sb-name">项目名称</label>
-          <input id="sb-name" className="sb-input" value={name} onChange={(event) => setName(event.target.value)} placeholder="例如：雾港疑案" />
-        </div>
-
-        <div className="sb-field">
-          <label htmlFor="sb-text">{textLabel}</label>
-          <textarea id="sb-text" className="sb-textarea" value={text} onChange={(event) => setText(event.target.value)} />
-        </div>
-
-        <div className="sb-field">
-          <label htmlFor="sb-secondary">{secondaryLabel}</label>
-          <textarea id="sb-secondary" className="sb-textarea" style={{ minHeight: 90 }} value={secondary} onChange={(event) => setSecondary(event.target.value)} />
-        </div>
-
-        {tertiaryLabel ? (
-          <div className="sb-field">
-            <label htmlFor="sb-tertiary">{tertiaryLabel}</label>
-            <textarea id="sb-tertiary" className="sb-textarea" style={{ minHeight: 80 }} value={tertiary} onChange={(event) => setTertiary(event.target.value)} />
+      <div className="sb-intake-workspace" inert={submitting}>
+        <section className="sb-writing-paper">
+          <div className="sb-writing-top">
+            <label htmlFor="sb-name" className="sb-sr-only">
+              故事名称（可选）
+            </label>
+            <input
+              id="sb-name"
+              value={draft.name}
+              maxLength={60}
+              onChange={(e) => editDraft({ name: e.target.value })}
+              placeholder="给故事起个名字，也可以晚点再想"
+            />
+            <button className="sb-quiet-button" onClick={() => fileInput.current?.click()}>
+              <Upload size={14} />
+              导入文字
+            </button>
+            <input
+              hidden
+              ref={fileInput}
+              type="file"
+              accept=".txt,.md,text/plain,text/markdown"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                try {
+                  if (file.size > 40 * 1024) throw new Error('请使用 8000 字以内的文本片段。');
+                  const text = await file.text();
+                  if (text.length > 8000) throw new Error('请使用 8000 字以内的文本片段。');
+                  editDraft({
+                    text,
+                    name: editor.session.getSnapshot().value.name || file.name.replace(/\.(txt|md)$/i, ''),
+                  });
+                  setError(null);
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : '读取失败。');
+                }
+              }}
+            />
           </div>
-        ) : null}
-
-        {error ? <InlineAlert tone="warning"><div className="runtime-alert-copy"><strong>无法创建</strong><span>{error}</span></div></InlineAlert> : null}
-
-        <div className="sb-actions">
-          <StatusBadge tone="neutral">所有输入会先结构化再生成</StatusBadge>
-          <Button type="button" tone="primary" onClick={submit} data-testid="studio-intake-submit">转换并创建项目</Button>
-        </div>
+          <label htmlFor="sb-text" className="sb-sr-only">
+            故事原文
+          </label>
+          <textarea
+            id="sb-text"
+            value={draft.text}
+            maxLength={8000}
+            onChange={(e) => editDraft({ text: e.target.value })}
+            placeholder={
+              '粘贴一篇短篇、一段你喜欢的文字，\n或者，只是一个突然冒出来的念头。\n\n那天，事情本来不应该这样发生……'
+            }
+          />
+          <div className="sb-writing-footer">
+            <span>
+              <FileText size={13} />
+              {editor.status === 'saving' ? '正在保存草稿…' : editor.status === 'error' ? '草稿尚未保存' : getIntakeDraft() ? '草稿已保存在本机' : '输入后自动保存到本机'}
+            </span>
+            <span>{draft.text.length.toLocaleString()} / 8,000 字</span>
+          </div>
+        </section>
+        <aside className="sb-intake-aside">
+          <span className="sb-eyebrow">A LITTLE DIRECTION</span>
+          <h3>想让故事往哪里走？</h3>
+          <p>保留故事的灵魂，给体验一点方向。</p>
+          <div className="sb-directions">
+            {DIRECTIONS.map((d) => (
+              <button
+                key={d}
+                aria-pressed={draft.direction === d}
+                className={draft.direction === d ? 'is-active' : ''}
+                onClick={() => editDraft({ direction: d })}
+              >
+                {d}
+              </button>
+            ))}
+          </div>
+          <div className="sb-creation-steps">
+            <div>
+              <span>01</span>
+              <p>
+                <strong>读懂故事</strong>
+                <small>提炼世界、人物与隐藏的冲突</small>
+              </p>
+            </div>
+            <div>
+              <span>02</span>
+              <p>
+                <strong>一起定方向</strong>
+                <small>看一眼 AI 的提案，由你拍板</small>
+              </p>
+            </div>
+            <div>
+              <span>03</span>
+              <p>
+                <strong>让选择发生</strong>
+                <small>编排分支与结局，亲自走进去</small>
+              </p>
+            </div>
+          </div>
+        </aside>
       </div>
-    </Surface>
+      {editor.status === 'error' && <div className="sb-notice" role="alert"><p>输入仍保留在这里。{editor.error}</p><button className="sb-quiet-button" onClick={() => { void editor.session.flush().catch(() => undefined); }}>重试保存</button></div>}
+      {editor.notice && <p className="sb-notice" role="status">{editor.notice}</p>}
+      {error && (
+        <p className="sb-notice" role="alert">
+          {error}
+        </p>
+      )}
+      <div className="sb-intake-submit">
+        <span>还没想好？从一个灵感开始</span>
+        <button
+          className="sb-primary"
+          disabled={submitting || !draft.text.trim()}
+          onClick={submit}
+          data-testid="studio-intake-submit"
+        >
+          <Sparkles size={17} />
+          {submitting ? '正在创建故事…' : '让故事开始生长'}
+          <ArrowRight size={17} />
+        </button>
+      </div>
+      <div className="sb-seed-grid" inert={submitting}>
+        {SEEDS.map((seed) => (
+          <button
+            key={seed.label}
+            onClick={() => {
+              editDraft({ text: seed.text, name: seed.label });
+              setError(null);
+            }}
+          >
+            <span>{seed.label}</span>
+            <p>{seed.text}</p>
+            <ArrowRight size={15} />
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }

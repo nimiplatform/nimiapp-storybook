@@ -1,6 +1,6 @@
 app_id: nimi.storybook
 display_name: Storybook
-version: 0.1.5
+version: 0.1.6
 npm_package_name: nimiapp-storybook
 cargo_package_name: nimiapp-storybook-shell
 tauri_identifier: ai.nimi.apps.nimi.storybook

@@ -48,6 +48,12 @@ function chunkForModule(id: string): string | undefined {
 export default defineConfig({
   base: './',
   plugins: [react(), tailwindcss()],
+  server: {
+    watch: {
+      // Local verification and Electron packaging must not reload an active AI conversation.
+      ignored: ['**/.nimi/**', '**/.playwright-cli/**', '**/dist-electron/**', '**/dist-electron-package/**'],
+    },
+  },
   resolve: {
     alias: [
       { find: /^react$/, replacement: appReact },

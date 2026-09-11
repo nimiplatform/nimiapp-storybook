@@ -44,10 +44,16 @@ test('Play surface exposes no Studio authoring controls', () => {
 test('Studio surface owns the authoring path', () => {
   const intake = read('src/storybook/ui/studio/studio-intake.tsx');
   const project = read('src/storybook/ui/studio/studio-project.tsx');
-  assert.match(intake, /convertIntake/);
-  assert.match(intake, /seedTruthPackage/);
-  assert.match(project, /approveBible/);
-  assert.match(project, /scaffoldStarterChapter/);
+  assert.match(intake, /submitIntake/);
+  const submission = read('src/storybook/store/intake-submission.ts');
+  assert.match(submission, /convertIntake/);
+  assert.match(submission, /seedTruthPackage/);
+  assert.match(project, /approveProjectAndGenerate/);
+  const coordinator = read('src/storybook/ai/storybook-project.ts');
+  assert.match(coordinator, /approveBible/);
+  assert.match(coordinator, /admitFoundation/);
+  assert.match(coordinator, /admitChapter/);
+  assert.doesNotMatch(project, /scaffoldStarterChapter/);
   assert.match(project, /buildPreparedPackage/);
   assert.match(project, /buildStudioProjection/);
 });
@@ -134,8 +140,11 @@ test('app-internal memory has no Runtime/Realm/ecosystem write surface', () => {
   assert.doesNotMatch(memoryImports, /realm|runtime/i);
 
   const store = read('src/storybook/store/storybook-store.ts');
-  // the local store persists only to localStorage / in-memory, never to Realm/Runtime
-  assert.match(store, /localStorage/);
+  // Product data uses the native App-scoped file facade; Runtime memory and Realm remain separate.
+  assert.match(store, /putRecord/);
+  assert.doesNotMatch(store, /localStorage|indexedDB|memoryStore/);
+  assert.match(read('src/shell/infra/storybook-file-storage.ts'), /getStorybookNimiClient/);
+  assert.match(read('src/shell/infra/storybook-file-storage.ts'), /assets\.write/);
   assert.doesNotMatch(store, /@nimiplatform\/sdk\/realm|runtime\.account|RealmWorld/);
 });
 
@@ -158,4 +167,19 @@ test('scaffold identity is Storybook, not Tester', () => {
   assert.match(read('index.html'), /<title>Storybook<\/title>/);
   // tester product surfaces are gone
   assert.doesNotMatch(read('src/shell/routes/product-area.tsx'), /TesterWorkbench|world-tour/);
+});
+
+test('story content does not become an engine or AI execution dependency', () => {
+  const coreFiles = ['engine', 'ai'].flatMap((dir) => listFiles(path.join(root, 'src', 'storybook', dir)));
+  const core = coreFiles.map((file) => readFileSync(file, 'utf8')).join('\n');
+  assert.doesNotMatch(core, /(?:from|export[^\n]*from)\s+['"][^'"]*\/content\//);
+  assert.doesNotMatch(core, /storybook-harbor-letters|六点十七分|彗星|怀表|钥匙/);
+  assert.doesNotMatch(read('src/storybook/ui/play/play-home.tsx'), /storybook-harbor-letters|每个人都有秘密|5–8 分钟/);
+  assert.doesNotMatch(read('src/storybook/engine/authoring.ts'), /scaffoldStarterChapter/);
+});
+
+test('Engine owns pure run transitions without persistence or UI dependencies', () => {
+  const engine = listFiles(path.join(root, 'src', 'storybook', 'engine')).map((file) => readFileSync(file, 'utf8')).join('\n');
+  const imports = engine.split('\n').filter((line) => /from ['"]/.test(line)).join('\n');
+  assert.doesNotMatch(imports, /\.\.\/(?:store|ui|content)\/|@nimiplatform|['"]react/);
 });

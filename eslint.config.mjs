@@ -12,6 +12,7 @@ export default defineConfig([
     'dist-electron-package/**',
     'src-tauri/target/**',
     'node_modules/**',
+    '.nimi/local/**',
     '*.config.ts',
     '*.config.mjs',
     'test/**',

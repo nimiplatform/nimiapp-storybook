@@ -10,26 +10,8 @@ import { mintId } from '../engine/ids.js';
 import { invokeStorybookText, invokeStorybookImage } from './storybook-runtime-invokers.js';
 import { type StorybookAIUnavailable } from './storybook-unavailable.js';
 
-export type GenerationRunKind = 'bible-draft' | 'scene-text' | 'choice-suggestions' | 'asset-image';
-
-export type GenerationProvenance = {
-  at: string;
-  route?: 'local' | 'cloud';
-  /** Portable App AIConfig fingerprint; provider/model identity is Runtime-owned. */
-  configHash?: string;
-  traceId?: string;
-  status: 'succeeded' | 'unavailable';
-  reason?: string;
-};
-
-export type GenerationRun = {
-  id: string;
-  projectId: string;
-  kind: GenerationRunKind;
-  request: Record<string, unknown>;
-  provenance: GenerationProvenance;
-  outputRefs: string[];
-};
+import type { GenerationRunKind, GenerationRun, GenerationProvenance } from '../engine/generation-record.js';
+export type { GenerationRunKind, GenerationRun, GenerationProvenance } from '../engine/generation-record.js';
 
 export type GenerationOutcome<T> =
   | { ok: true; value: T; run: GenerationRun }

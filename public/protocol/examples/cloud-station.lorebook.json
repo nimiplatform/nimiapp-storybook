@@ -1,0 +1,18 @@
+{
+  "name": "云上驿站",
+  "description": "当前世界是云上驿站。人们住在缓慢漂移的云岛上，岛屿间通过风帆摆渡船通行。每天下午的钟声响起时，所有人要将一封信交给迁徙的白鸟。这里没有海洋，也不会下雨。",
+  "scan_depth": 4,
+  "token_budget": 1024,
+  "recursive_scanning": false,
+  "extensions": {},
+  "entries": [
+    {
+      "keys": [],
+      "content": "当前世界是云上驿站。人们住在缓慢漂移的云岛上，岛屿间通过风帆摆渡船通行。每天下午的钟声响起时，所有人要将一封信交给迁徙的白鸟。这里没有海洋，也不会下雨。",
+      "enabled": true,
+      "constant": true,
+      "insertion_order": 0,
+      "extensions": {}
+    }
+  ]
+}

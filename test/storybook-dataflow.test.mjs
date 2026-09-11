@@ -3,6 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import test from 'node:test';
+import { createFileBackend } from './fixtures/native-file-backend.mjs';
 import { pathToFileURL } from 'node:url';
 
 // Round-2 data-flow tests: prove the REAL product loops (not demo) at the
@@ -25,14 +26,14 @@ function resolveTsc() {
 let buildDir = null;
 function build() {
   if (buildDir) return buildDir;
-  mkdirSync(path.join(root, '.tmp'), { recursive: true });
-  const dir = mkdtempSync(path.join(root, '.tmp', 'dataflow-'));
+  mkdirSync(path.join(root, '.nimi', 'local'), { recursive: true });
+  const dir = mkdtempSync(path.join(root, '.nimi', 'local', 'dataflow-'));
   execFileSync(process.execPath, [
     resolveTsc(),
-    '--outDir', dir, '--rootDir', 'src',
+    '--outDir', dir, '--rootDir', '.', '--resolveJsonModule', 'true',
     '--module', 'NodeNext', '--moduleResolution', 'NodeNext', '--target', 'ES2022',
     '--skipLibCheck', 'true', '--strict', 'true', '--noEmit', 'false',
-    'src/storybook/engine/index.ts', 'src/storybook/store/storybook-store.ts',
+    'src/storybook/engine/index.ts', 'src/storybook/store/storybook-store.ts', 'src/storybook/content/example.ts',
   ], { cwd: root, stdio: 'pipe' });
   buildDir = dir;
   return dir;
@@ -40,9 +41,11 @@ function build() {
 
 async function load() {
   const dir = build();
-  const engine = await import(pathToFileURL(path.join(dir, 'storybook', 'engine', 'index.js')).href);
-  const store = await import(pathToFileURL(path.join(dir, 'storybook', 'store', 'storybook-store.js')).href);
-  return { engine, store };
+  const engine = await import(pathToFileURL(path.join(dir, 'src', 'storybook', 'engine', 'index.js')).href);
+  const store = await import(pathToFileURL(path.join(dir, 'src', 'storybook', 'store', 'storybook-store.js')).href);
+  const example = await import(pathToFileURL(path.join(dir, 'src', 'storybook', 'content', 'example.js')).href);
+  await store.initializeStorybookStore(createFileBackend(path.join(dir, 'native-records')));
+  return { engine: { ...engine, ...example }, store };
 }
 
 const NOW = '2026-06-01T00:00:00.000Z';
@@ -55,20 +58,20 @@ test('wave-11 REAL loop: run-emerged candidate → Studio review query → memor
   const { engine, store } = await load();
   const projectId = 'p-dataflow';
   const truth = { ...engine.buildExampleTruthPackage(NOW), projectId };
-  store.saveProject({ project: { id: projectId, name: 'T', mode: 'original-scenario', truthPackageId: truth.id, createdAt: NOW, updatedAt: NOW }, truthPackage: truth, memory: engine.createProjectMemory(projectId) });
+  await store.saveProject({ project: { id: projectId, name: 'T', mode: 'original-scenario', truthPackageId: truth.id, createdAt: NOW, updatedAt: NOW }, truthPackage: truth, memory: engine.createProjectMemory(projectId) });
 
   // a creator package linked to the project
   const pkgId = 'pkg-dataflow';
   const prepared = engine.buildExamplePreparedPackage(NOW);
   assert.equal(prepared.ok, true);
   const linkedPackage = { ...prepared.value, manifest: { ...prepared.value.manifest, packageId: pkgId } };
-  store.saveImportedPackage({ id: pkgId, label: 'creator', source: 'local-import', entryLabel: 'creator-provided', package: linkedPackage, importedAt: NOW, sourceProjectId: projectId });
+  await store.saveImportedPackage({ id: pkgId, label: 'creator', source: 'local-import', entryLabel: 'creator-provided', package: linkedPackage, importedAt: NOW, sourceProjectId: projectId });
 
   // a Play run that produced a REAL candidate from a guarded turn
   const candidate = engine.deriveCandidateFromTurn({ turnId: 't1', targetTruthRef: null, targetObjectFamily: 'feedback-rule', mutationType: 'add-feedback', proposedChange: { playerSteer: '希望更克制', guardedOutput: '（克制的回应）' } });
   const chapter = linkedPackage.playableChapters[0];
   const run = engine.startRun({ projectId, packageId: pkgId, chapter, variables: {}, flags: {}, now: NOW });
-  store.saveRun({ packageId: pkgId, run, transcript: engine.createTranscript(run.id), snapshots: [], promotionCandidates: [candidate] });
+  await store.saveRun({ packageId: pkgId, run, transcript: engine.createTranscript(run.id), promotionCandidates: [candidate] });
 
   // replicate the Studio promotion-review query (link project → packages → runs → candidates)
   const projectPackageIds = new Set(store.listImportedPackages().filter((p) => p.sourceProjectId === projectId).map((p) => p.package.manifest.packageId));
@@ -90,7 +93,7 @@ test('wave-11 REAL loop: run-emerged candidate → Studio review query → memor
   assert.ok(prefs.some((n) => n.includes('更克制')), 'accepted preference feeds the next generation input');
 
   // mark resolved → it does not reappear in the review queue
-  store.saveRun({ ...store.getRun(run.id), resolvedCandidateIds: [candidate.id] });
+  await store.saveRun({ ...store.getRun(run.id), resolvedCandidateIds: [candidate.id] });
   const stillPending = store.listRuns().filter((r) => projectPackageIds.has(r.packageId)).flatMap((r) => (r.promotionCandidates ?? []).filter((c) => !(r.resolvedCandidateIds ?? []).includes(c.id)));
   assert.equal(stillPending.length, 0, 'resolved candidate is not re-surfaced');
 });

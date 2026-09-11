@@ -1,0 +1,122 @@
+{
+  "format": "nimi.storybook",
+  "version": "0.1.0",
+  "title": "长椅的另一端",
+  "summary": "同一张长椅，换一个同行者，就有另一种故事。",
+  "roles": {
+    "companion": {
+      "label": "坐在你身旁的人"
+    }
+  },
+  "modules": {
+    "nimi.storybook.conversation": {
+      "version": "1",
+      "config": {
+        "context": "你与玩家偶然坐在同一张长椅上。依据自己的性格和已绑定的世界自然互动。不要替玩家作决定。"
+      }
+    },
+    "nimi.storybook.flow": {
+      "version": "1",
+      "required": true,
+      "config": {
+        "entry": "meet",
+        "state": {
+          "topic": "none"
+        },
+        "nodes": [
+          {
+            "id": "meet",
+            "title": "留一个位置",
+            "content": [
+              {
+                "type": "text",
+                "text": "长椅的另一端空着。你坐下来，一场偶然的相遇就这样开始了。"
+              }
+            ],
+            "dialogue": true,
+            "choices": [
+              {
+                "id": "past",
+                "label": "说一件一直记得的小事",
+                "target": "memory",
+                "set": {
+                  "topic": "memory"
+                },
+                "feedback": [
+                  {
+                    "type": "text",
+                    "text": "你决定先把一个小小的过去，交给眼前的人。"
+                  }
+                ]
+              },
+              {
+                "id": "future",
+                "label": "问问对方想去哪里",
+                "target": "future",
+                "set": {
+                  "topic": "future"
+                },
+                "feedback": [
+                  {
+                    "type": "text",
+                    "text": "这个下午忽然有了一个关于远方的话题。"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "memory",
+            "title": "一件小事的回声",
+            "context": "玩家选择谈论一件记得的小事。以你的性格回应，可以分享属于角色的记忆。",
+            "content": [
+              {
+                "type": "text",
+                "text": "远处的声音慢了下来。对方转过身，认真等你说下去。"
+              }
+            ],
+            "choices": [
+              {
+                "id": "stay",
+                "label": "把这次相遇留在这里",
+                "target": "close",
+                "when": {
+                  "topic": "memory"
+                }
+              }
+            ]
+          },
+          {
+            "id": "future",
+            "title": "还没抵达的远方",
+            "context": "玩家询问你想去哪里。依照角色自身愿望和已绑定世界回答。",
+            "content": [
+              {
+                "type": "text",
+                "text": "你们一起望向街道的尽头。它似乎通向许多还没发生的事情。"
+              }
+            ],
+            "choices": [
+              {
+                "id": "leave",
+                "label": "带着一个新的念头离开",
+                "target": "close"
+              }
+            ]
+          },
+          {
+            "id": "close",
+            "title": "下次相遇以前",
+            "end": true,
+            "content": [
+              {
+                "type": "text",
+                "text": "告别不必很隆重。你记住了长椅另一端的那个人，也许还带走了一点新的勇气。"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

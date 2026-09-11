@@ -1,15 +1,9 @@
-import type {
-  NimiPortableAppAIConfig,
-  NimiPortableAppAIConfigIntent,
-} from '@nimiplatform/sdk/ai';
+import type { NimiPortableAppAIConfig, NimiPortableAppAIConfigIntent } from '@nimiplatform/sdk/ai';
 import { runtimeAIConfigStructToJson } from '@nimiplatform/sdk/ai';
 import type { NimiLocalAppTextCandidateInput } from '@nimiplatform/sdk/app';
 import type { StorybookRuntimePlatformClient } from '../../shell/auth/runtime-platform.js';
 import { STORYBOOK_TEXT_GENERATE_CAPABILITY_ID } from '../../shell/ai/storybook-ai-requirements.ts';
-import {
-  loadStorybookAIConfig,
-  versionStorybookAIConfig,
-} from './storybook-ai-config-store.ts';
+import { loadStorybookAIConfig, versionStorybookAIConfig } from './storybook-ai-config-store.ts';
 import {
   storybookAIUnavailable,
   type StorybookAIUnavailable,
@@ -25,6 +19,9 @@ const REGISTERED_TEXT_SURFACES = new Set([
   'nimi.storybook.studio.bible',
   'nimi.storybook.play.scene',
   'nimi.storybook.play.choices',
+  'nimi.storybook.studio.foundation',
+  'nimi.storybook.studio.chapter',
+  'nimi.storybook.play.experience',
 ]);
 
 export type StorybookTextResult =
@@ -78,21 +75,31 @@ export function resolveStorybookTextIntent(
 }
 
 export function buildStorybookTextCandidateInput(input: {
-  readonly prompt: string;
+  readonly prompt?: string;
+  readonly messages?: readonly { role: 'system' | 'user'; text: string }[];
   readonly directive?: string;
+  readonly context?: string[];
   readonly temperature: number;
   readonly topP: number;
   readonly maxTokens: number;
 }): NimiLocalAppTextCandidateInput {
-  const prompt = exactText(input.prompt, 'Text generation prompt');
-  const directive = input.directive === undefined
-    ? ''
-    : exactText(input.directive, 'Text generation directive');
-  const messages = [
+  if (input.messages && (input.prompt !== undefined || input.directive !== undefined || input.context !== undefined)) throw inputError('Explicit messages cannot be mixed with prompt fields.');
+  const prompt = input.messages ? '' : exactText(input.prompt, 'Text generation prompt');
+  const directive =
+    input.directive === undefined ? '' : exactText(input.directive, 'Text generation directive');
+  const messages = input.messages ? input.messages.map(message => {
+    if (!['system', 'user'].includes(message.role)) throw inputError('Unsupported App Access message role.');
+    return { role: message.role, text: exactText(message.text, 'Experience message') };
+  }) : [
     ...(directive ? [{ role: 'system' as const, text: directive }] : []),
+    ...(input.context ?? []).map((text) => ({
+      role: 'user' as const,
+      text: exactText(text, 'Story context'),
+    })),
     { role: 'user' as const, text: prompt },
   ];
-  if (messages.length > MAX_MESSAGES) throw inputError('Text candidate message count exceeds the App Access bound.');
+  if (messages.length === 0 || messages.length > MAX_MESSAGES)
+    throw inputError('Text candidate message count exceeds the App Access bound.');
   let totalBytes = 0;
   for (const message of messages) {
     const bytes = utf8Bytes(message.text);
@@ -114,7 +121,14 @@ export function buildStorybookTextCandidateInput(input: {
 
 export async function invokeStorybookText(
   client: StorybookRuntimePlatformClient,
-  input: { prompt: string; directive?: string; surfaceId: string },
+  input: {
+    prompt?: string;
+    messages?: readonly { role: 'system' | 'user'; text: string }[];
+    directive?: string;
+    surfaceId: string;
+    maxTokens?: number;
+    context?: string[];
+  },
   config?: NimiPortableAppAIConfig | null,
 ): Promise<StorybookTextResult> {
   if (!REGISTERED_TEXT_SURFACES.has(input.surfaceId)) {
@@ -131,12 +145,21 @@ export async function invokeStorybookText(
     if ('ok' in resolved) return resolved;
     const request = buildStorybookTextCandidateInput({
       prompt: input.prompt,
+      messages: input.messages,
       directive: input.directive,
+      context: input.context,
       temperature: resolved.temperature,
       topP: resolved.topP,
-      maxTokens: resolved.maxTokens,
+      maxTokens: input.maxTokens ?? resolved.maxTokens,
     });
     const output = await client.ai.text.generateCandidate(request);
+    if (!output.text?.trim() || output.finishReason === 'length') {
+      return storybookAIUnavailable(
+        'text.generate',
+        'runtime-call-failed',
+        output.text?.trim() ? 'AI 输出被截断，请重试或缩短原文。' : 'AI 没有返回内容，请重试。',
+      );
+    }
     return {
       ok: true,
       capability: 'text.generate',
@@ -157,9 +180,10 @@ export async function invokeStorybookText(
   }
 }
 
-export async function invokeStorybookImage(
-  input: { prompt: string; surfaceId: string },
-): Promise<StorybookImageResult> {
+export async function invokeStorybookImage(input: {
+  prompt: string;
+  surfaceId: string;
+}): Promise<StorybookImageResult> {
   if (!input.prompt.trim()) {
     return storybookAIUnavailable('image.generate', 'input-invalid', 'Image prompt is empty.');
   }
@@ -171,9 +195,10 @@ export async function invokeStorybookImage(
 }
 
 function reasonFromSdkError(error: unknown): StorybookAIUnavailableReason {
-  const reason = error && typeof error === 'object'
-    ? String((error as { reasonCode?: unknown }).reasonCode || '')
-    : '';
+  const reason =
+    error && typeof error === 'object'
+      ? String((error as { reasonCode?: unknown }).reasonCode || '')
+      : '';
   if (reason === 'STORYBOOK_TEXT_INPUT_INVALID') return 'input-invalid';
   if (reason.includes('AUTH_CONTEXT_MISSING')) return 'auth-context-missing';
   if (/(?:UNAUTHORIZED|SESSION_EXPIRED|TOKEN_EXPIRED|TOKEN_REVOKED)/u.test(reason)) {
@@ -209,12 +234,7 @@ function exactText(value: unknown, field: string): string {
   return value;
 }
 
-function boundedNumber(
-  value: unknown,
-  minimum: number,
-  maximum: number,
-  fallback: number,
-): number {
+function boundedNumber(value: unknown, minimum: number, maximum: number, fallback: number): number {
   return typeof value === 'number' && Number.isFinite(value) && value >= minimum && value <= maximum
     ? value
     : fallback;

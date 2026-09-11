@@ -33,7 +33,7 @@ function describeCandidate(candidate: PromotionCandidate): string {
 
 type PendingEntry = { runId: string; candidate: PromotionCandidate };
 
-export function StudioPromotion({ record, onUpdate }: { record: StoredProjectRecord; onUpdate: (record: StoredProjectRecord) => void }) {
+export function StudioPromotion({ record, onUpdate }: { record: StoredProjectRecord; onUpdate: (change: (current: StoredProjectRecord) => StoredProjectRecord) => Promise<void> }) {
   const [refreshKey, setRefreshKey] = useState(0);
 
   const [realmInput, setRealmInput] = useState('foggy/world-rule/curfew');
@@ -53,29 +53,31 @@ export function StudioPromotion({ record, onUpdate }: { record: StoredProjectRec
     );
   }, [record.project.id, refreshKey]);
 
-  function resolve(entry: PendingEntry, proposed: PromotionEnum) {
+  async function resolve(entry: PendingEntry, proposed: PromotionEnum) {
     const assessment = assessPromotionCandidateLocally(entry.candidate);
     const decided = enforcePromotionPolicy({ candidate: entry.candidate, assessment, proposedDecision: proposed, now: nowIso() });
     if (!decided.ok) { nimiToast.danger(`${decided.code}: ${decided.message}`); return; }
     // record the decision ref in project memory; auto_accept additionally materializes a feedback patch
-    const wired = recordAcceptedPromotion(record.memory, { decision: decided.value.decision, candidate: entry.candidate, note: describeCandidate(entry.candidate), now: nowIso() }, record.truthPackage);
-    if (!wired.ok) { nimiToast.danger(`${wired.code}: ${wired.message}`); return; }
-    onUpdate({ ...record, memory: wired.value });
+    await onUpdate(current => {
+      const wired = recordAcceptedPromotion(current.memory, { decision: decided.value.decision, candidate: entry.candidate, note: describeCandidate(entry.candidate), now: nowIso() }, current.truthPackage);
+      if (!wired.ok) throw new Error(`${wired.code}: ${wired.message}`);
+      return { ...current, memory: wired.value };
+    });
     // mark resolved on the originating run so it does not reappear
     const run = getRun(entry.runId);
-    if (run) saveRun({ ...run, resolvedCandidateIds: [...(run.resolvedCandidateIds ?? []), entry.candidate.id] });
+    if (run) await saveRun({ ...run, resolvedCandidateIds: [...(run.resolvedCandidateIds ?? []), entry.candidate.id] });
     setRefreshKey((k) => k + 1);
     nimiToast.success(`候选 → ${decided.value.decision.decision}${proposed === 'auto_accept' ? '（已写入项目记忆，将作用于后续生成）' : ''}`);
   }
 
-  function importRealmRef() {
+  async function importRealmRef() {
     setRealmError(null);
     const [namespace, kind, localId] = realmInput.split('/');
     if (!namespace || !kind || !localId) { setRealmError('请使用 namespace/kind/localId 格式。'); return; }
     const imported = createImportedRef({ realmRef: makeRealmRef(namespace, kind as Parameters<typeof makeRealmRef>[1], localId), realmObjectKind: kind as Parameters<typeof makeRealmRef>[1], realmRelease });
     if (!imported.ok) { setRealmError(`${imported.code}: ${imported.message}`); return; }
     // persist onto the truth package so it participates in projection/diagnostics
-    onUpdate({ ...record, truthPackage: addRealmImport(record.truthPackage, imported.value, nowIso()) });
+    await onUpdate(current => ({ ...current, truthPackage: addRealmImport(current.truthPackage, imported.value, nowIso()) }));
     nimiToast.success(`已引用并持久化：${imported.value.realmRef} @ ${imported.value.realmRelease}`);
   }
 
@@ -119,10 +121,10 @@ export function StudioPromotion({ record, onUpdate }: { record: StoredProjectRec
                   </div>
                   <p>{describeCandidate(entry.candidate)}</p>
                   <div className="sb-actions">
-                    <Button type="button" tone="primary" size="sm" onClick={() => resolve(entry, 'auto_accept')}>接受并学习</Button>
-                    <Button type="button" tone="secondary" size="sm" onClick={() => resolve(entry, 'needs_review')}>留待复核</Button>
-                    <Button type="button" tone="secondary" size="sm" onClick={() => resolve(entry, 'session_only')}>仅本次运行</Button>
-                    <Button type="button" tone="secondary" size="sm" onClick={() => resolve(entry, 'reject')}>拒绝</Button>
+                    <Button type="button" tone="primary" size="sm" onClick={() => void resolve(entry, 'auto_accept').catch(e => nimiToast.danger(e instanceof Error ? e.message : "保存失败。"))}>接受并学习</Button>
+                    <Button type="button" tone="secondary" size="sm" onClick={() => void resolve(entry, 'needs_review').catch(e => nimiToast.danger(e instanceof Error ? e.message : "保存失败。"))}>留待复核</Button>
+                    <Button type="button" tone="secondary" size="sm" onClick={() => void resolve(entry, 'session_only').catch(e => nimiToast.danger(e instanceof Error ? e.message : "保存失败。"))}>仅本次运行</Button>
+                    <Button type="button" tone="secondary" size="sm" onClick={() => void resolve(entry, 'reject').catch(e => nimiToast.danger(e instanceof Error ? e.message : "保存失败。"))}>拒绝</Button>
                   </div>
                 </Surface>
               );
@@ -151,7 +153,7 @@ export function StudioPromotion({ record, onUpdate }: { record: StoredProjectRec
           </div>
         </div>
         <div className="sb-actions">
-          <Button type="button" tone="secondary" size="sm" onClick={importRealmRef}>引用并持久化（imported_ref）</Button>
+          <Button type="button" tone="secondary" size="sm" onClick={() => void importRealmRef().catch(e => setRealmError(e instanceof Error ? e.message : '保存失败。'))}>引用并持久化（imported_ref）</Button>
           <Button type="button" tone="secondary" size="sm" onClick={attemptRunStatePromotion}>尝试运行态→Realm 提升（应被拒绝）</Button>
         </div>
         {realmImports.length > 0 ? (

@@ -9,7 +9,7 @@ units:
   - id: definition.storybook.ia.play
     kind: definition
     title: Play surface
-    meaning: Play is the player surface that owns reading, choice selection, run continuation, and recoverable player-facing failure states.
+    meaning: Play is the player surface that owns content import, experience setup, multimodal presentation, authored choices or open interaction, run continuation, and recoverable player-facing failure states.
   - id: definition.storybook.ia.settings
     kind: definition
     title: Settings surface
@@ -28,6 +28,30 @@ units:
         target: definition.storybook.ia.settings
       - type: applies_to
         target: definition.storybook.ia.studio
+  - id: rule.storybook.ia.r006
+    kind: rule
+    title: Local reading without an AI session
+    modality: must
+    statement: Valid prepared stories, saved runs and creator drafts remain readable from admitted Nimi native storage or already loaded snapshots when AI execution is unavailable; cold start requires the native content host, missing native storage exposes recovery without browser fallback, and Settings presents the actual session posture.
+    condition: Whenever the Runtime session is absent, checking, or unavailable.
+    failure: Preserve local work and expose a recoverable connection action without manufacturing an authenticated session or generated content.
+    relations:
+      - type: applies_to
+        target: definition.storybook.ia.play
+      - type: applies_to
+        target: definition.storybook.ia.settings
+      - type: applies_to
+        target: definition.storybook.ia.studio
+  - id: rule.storybook.ia.r007
+    kind: rule
+    title: Text to playable story
+    modality: must
+    statement: Studio accepts narrative text and a creative direction, persists the source draft, produces an AI foundation for creator review, and generates a complete branching chapter only after foundation approval, including a continuity revision against the retained source and approved foundation before admission; publishing to the local Play library requires truth and prepared-package validation.
+    condition: Whenever a creator adapts narrative text into a playable story.
+    failure: Preserve source and approved work on generation or validation failure, present a retry action, and do not substitute generic chapter scaffolding for generated narrative.
+    relations:
+      - type: applies_to
+        target: definition.storybook.ia.studio
   - id: rule.storybook.ia.r002
     kind: rule
     title: Studio responsibility
@@ -42,7 +66,7 @@ units:
     kind: rule
     title: Play responsibility
     modality: must
-    statement: Play owns reading, choice selection, run continuation, and recoverable player-facing failure states and never exposes Studio authoring controls.
+    statement: Play owns importing and selecting content, choosing declared character and world bindings before a new run, interacting with the selected experience, and recoverable failures; editing work definitions remains in Studio.
     condition: Whenever an ordinary player reads or continues a Storybook run.
     failure: Reject Studio authoring controls from Play and expose a recoverable player-facing failure when Play cannot proceed.
     relations:
@@ -50,14 +74,21 @@ units:
         target: definition.storybook.ia.play
   - id: rule.storybook.ia.r004
     kind: rule
+    lifecycle: removed
     title: Choice-first play
+    reason: The accepted Character Card V2 and independent experience redesign permits author-chosen interaction without mandatory choices or chapters.
+  - id: rule.storybook.ia.r008
+    kind: rule
+    title: Author-chosen interaction
     modality: must
-    statement: Play is choice-first, and free-text input remains optional rather than a required path for ordinary progression.
-    condition: Whenever ordinary Play progression is designed or presented.
-    failure: Block an ordinary progression design that requires free-text input or is not choice-first.
+    statement: Plain Character Card V2 supports immediate open interaction and alternate openings without a Storybook extension; authored experiences may combine dialogue, deterministic choices, and typed media locally without a mandatory global play mode.
+    condition: Whenever an experience is admitted or presented in Play.
+    failure: Reject an invented chapter, ending, mandatory choice set, or extension requirement imposed on an otherwise valid plain character card.
     relations:
       - type: applies_to
         target: definition.storybook.ia.play
+      - type: supersedes
+        target: rule.storybook.ia.r004
   - id: rule.storybook.ia.r005
     kind: rule
     title: Settings responsibility

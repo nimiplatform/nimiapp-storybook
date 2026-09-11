@@ -5,11 +5,11 @@ units:
   - id: definition.storybook.product.truth-package
     kind: definition
     title: Storybook truth package
-    meaning: The storybook-truth-package is the canonical product authority record for each Storybook project and owns its scenario frame, source cast, Storybook Bible, adaptation brief, visual style guide, divergences, branch topology, state and ending matrix, chapters, assets, evidence bindings, derivations, projection inputs, accepted feedback, compatibility exports, and optional Realm structural imports.
+    meaning: The app-owned project authority is either an authored story truth package or an admitted experience truth package containing an independently versioned Storybook work, bound Character Card V2 resources, lorebooks, and source references; scenario frames, Bibles, chapters, branches, endings, and media are optional authoring forms rather than universal prerequisites.
   - id: definition.storybook.product.lifecycle
     kind: definition
     title: Truth governance lifecycle
-    meaning: The truth governance lifecycle consists of draft, foundation-approved, and play-ready states.
+    meaning: Authored text adaptation uses draft, foundation-approved, and play-ready states; imported experiences become playable after format validation, resource binding, and required capability checks without an invented foundation review or chapter.
   - id: definition.storybook.product.projection-surface
     kind: definition
     title: Truth projection surface
@@ -50,7 +50,7 @@ units:
     kind: rule
     title: Play promotion gate
     modality: must
-    statement: Promotion to Play requires complete truth prerequisites and successful validation under the draft, foundation-approved, and play-ready governance lifecycle.
+    statement: Admission to Play requires the prerequisites of the selected authoring form, resolvable resources, and successful validation; the foundation approval lifecycle applies to authored text adaptation and does not gate direct Character Card V2 or independent Storybook experience use.
     condition: Whenever a Storybook project is promoted to Play.
     failure: Block promotion and fail closed when any truth prerequisite is missing or validation does not succeed.
     relations:

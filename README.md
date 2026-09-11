@@ -1,5 +1,7 @@
 # Storybook
 
+AI驱动的互动叙事应用
+
 Profile: `standalone`
 
 Storybook is a Nimi App: an agentic interactive narrative product with separated

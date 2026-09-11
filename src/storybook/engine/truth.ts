@@ -31,6 +31,10 @@ import {
   validateVisualStyleGuide,
 } from './adaptation.js';
 import { type RealmSourceImport, validateRealmImport } from './realm.js';
+import type { ExperienceTruthPackage } from './protocol/session.js';
+
+// @nimi-authority: rule.storybook.data-model.r001
+export type StorybookProjectAuthority = StorybookTruthPackage | ExperienceTruthPackage;
 
 export type StorybookProjectMode = 'source-backed' | 'document-backed' | 'persona-seed' | 'original-scenario' | 'manual-setting' | 'structured-notes';
 

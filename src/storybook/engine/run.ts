@@ -29,6 +29,8 @@ export type StoryNode = {
   id: string;
   chapterId: string;
   text: string;
+  title?: string;
+  speaker?: string;
   /** Authored choices. The Play loop may augment these with generated choices. */
   choices: Choice[];
   effects?: Effect[];
@@ -69,6 +71,7 @@ export type BranchSnapshot = {
   label: string;
   variables: Record<string, number>;
   flags: Record<string, boolean>;
+  achievements?: string[];
   createdAt: string;
 };
 
@@ -261,6 +264,7 @@ export function snapshotBranch(run: StoryRun, label: string, now: string): Branc
     label,
     variables: { ...run.variables },
     flags: { ...run.flags },
+    achievements: [...run.achievements],
     createdAt: now,
   };
 }

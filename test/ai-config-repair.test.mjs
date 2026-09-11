@@ -1,30 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readFileSync } from 'node:fs';
 
 import {
-  STORYBOOK_AI_CONFIG_INDEX_KEY,
-  STORYBOOK_AI_CONFIG_QUARANTINE_PREFIX,
-  STORYBOOK_AI_CONFIG_STORAGE_PREFIX,
   loadStorybookAIConfig,
   overwriteStorybookAIConfig,
-  repairStorybookAIConfigStorage,
   versionStorybookAIConfig,
 } from '../src/storybook/ai/storybook-ai-config-store.ts';
-
-function createMemoryStorage() {
-  const items = new Map();
-  return {
-    getItem(key) {
-      return items.has(key) ? items.get(key) : null;
-    },
-    setItem(key, value) {
-      items.set(key, String(value));
-    },
-    removeItem(key) {
-      items.delete(key);
-    },
-  };
-}
 
 function appConfig(capabilities = []) {
   return {
@@ -33,27 +15,9 @@ function appConfig(capabilities = []) {
   };
 }
 
-test('Storybook quarantines retired renderer-owned AIConfig without guessing a migration', () => {
-  const storage = createMemoryStorage();
-  const scopeKey = 'app:nimi.storybook:storybook.generation';
-  const storageKey = `${STORYBOOK_AI_CONFIG_STORAGE_PREFIX}:${scopeKey}`;
-  const raw = JSON.stringify({ scopeRef: { kind: 'app' }, capabilities: {} });
-  storage.setItem(STORYBOOK_AI_CONFIG_INDEX_KEY, JSON.stringify([scopeKey]));
-  storage.setItem(storageKey, raw);
-
-  const result = repairStorybookAIConfigStorage(storage, {
-    now: () => '2026-08-08T00:00:00.000Z',
-  });
-
-  assert.equal(result.scanned, 1);
-  assert.equal(result.quarantined, 1);
-  assert.deepEqual(result.removedScopeKeys, [scopeKey]);
-  assert.equal(storage.getItem(storageKey), null);
-  assert.deepEqual(JSON.parse(storage.getItem(STORYBOOK_AI_CONFIG_INDEX_KEY)), []);
-  assert.match(result.quarantineKeys[0], new RegExp(`^${STORYBOOK_AI_CONFIG_QUARANTINE_PREFIX}`));
-  const quarantine = JSON.parse(storage.getItem(result.quarantineKeys[0]));
-  assert.equal(quarantine.reasonCode, 'STORYBOOK_LEGACY_AI_CONFIG_RETIRED');
-  assert.equal(quarantine.raw, raw);
+test('Storybook has no renderer-owned AIConfig persistence or automatic migration', () => {
+  const source = readFileSync(new URL('../src/storybook/ai/storybook-ai-config-store.ts', import.meta.url), 'utf8');
+  assert.doesNotMatch(source, /localStorage|indexedDB|quarantine|LegacyStorage/);
 });
 
 test('Storybook reads and whole-overwrites Runtime-owned portable App AIConfig', async () => {

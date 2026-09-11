@@ -1,0 +1,104 @@
+format: nimicoding.authority/v2
+owner: team.storybook
+scope: storybook.protocol
+units:
+  - id: definition.storybook.protocol.storage
+    kind: definition
+    title: Nimi native application storage
+    meaning: Storybook durable data belongs to the App-scoped native file store mediated by Nimi Kit and the public local-app SDK storage interface; JSON narrative records and independent media files use the chunked asset file API, the repository cache reflects only committed data, transient editor and generation buffers retain pending input or results without reporting them as durable, and Kit-issued media handles are temporary presentation leases.
+  - id: rule.storybook.protocol.r007
+    kind: rule
+    title: Native persistence and media ownership
+    modality: must
+    statement: Persist imported content, creator drafts, project truth, prepared editions, runs and generated results through the Nimi native storage facade, store imported PNG artwork as independent files, await committed writes before reporting saved progress, and materialize stable local media references when exporting a portable work; browser storage and memory-only fallback are not durable product paths, and no app-owned storage root, provider route or credential custody replaces Kit ownership.
+    condition: Whenever Storybook opens, saves, resumes, renders native media, or exports app-owned content.
+    failure: Preserve existing files and pending creator input, report native storage or media unavailability, and do not acknowledge an uncommitted write or switch to browser persistence.
+    relations:
+      - type: applies_to
+        target: definition.storybook.product.truth-package
+      - type: applies_to
+        target: definition.storybook.protocol.storage
+  - id: definition.storybook.protocol.work
+    kind: definition
+    title: Independent experience interchange
+    meaning: A nimi.storybook work version 0.1.0 has a title and optional summary, cover resource reference, resources, role slots, namespaced versioned modules, and extensions; the identical work object may stand alone or be carried in data.extensions["nimi.storybook"] without redefining the Character Card V2 outer spec or field meanings.
+  - id: definition.storybook.protocol.card
+    kind: definition
+    title: Character Card V2 resource
+    meaning: A Character Card V2 resource retains its original structured data and unknown fields; creator notes, tags, creator and version are display metadata, while prompt fields and activated character book content follow V2 consumption semantics without mandatory semantic decomposition.
+  - id: definition.storybook.protocol.modules
+    kind: definition
+    title: Versioned experience modules
+    meaning: Modules declare version, required status, and config; the registered version 1 conversation, flow, and generation modules add optional context and openings, local dialogue and conditional transitions, and typed generation tasks, while unregistered modules remain opaque and retained.
+  - id: definition.storybook.protocol.generation
+    kind: definition
+    title: Typed media generation
+    meaning: Generation tasks declare capability, typed inputs, named typed outputs, explicit dependencies, manual or entry triggers, run or visit reuse or explicit repeated execution, required status, and optional authored fallback; results retain status, scope, typed output collections, and actual Runtime provenance, with distinct text, image, music, speech, sound, and video output intents.
+  - id: rule.storybook.protocol.r001
+    kind: rule
+    title: Bidirectional independence
+    modality: must
+    statement: Ordinary V2 cards are usable without a Storybook extension and independent works can bind zero, one, or several character cards; embedded and standalone work definitions use the same semantics and no runtime behavior is keyed to a particular story, character, or imported filename.
+    condition: Whenever Storybook imports, combines, exports, or plays creator content.
+    failure: Reject a required extension for plain card use or a story-specific code dependency.
+    relations:
+      - type: applies_to
+        target: definition.storybook.protocol.card
+      - type: applies_to
+        target: definition.storybook.protocol.work
+  - id: rule.storybook.protocol.r002
+    kind: rule
+    title: Faithful card consumption
+    modality: must
+    statement: Import and export preserve unknown card and lorebook fields; prompts use V2 replacement semantics and original, char, and user substitution, exclude display metadata, and activate enabled lore by constants or configured keyword rules within a visible bounded context policy; unsupported vendor extensions are retained and never silently claimed as executed.
+    condition: Whenever a V2 card is imported, exported, displayed, or used for inference.
+    failure: Reject malformed required fields before use, surface unsupported semantics and context limits, and do not infer or duplicate remote lorebook content from vendor references.
+    relations:
+      - type: applies_to
+        target: definition.storybook.protocol.card
+  - id: rule.storybook.protocol.r003
+    kind: rule
+    title: Resource and module validation
+    modality: must
+    statement: Validate registered module shapes, role bindings, resource references, flow targets and state writes, named task outputs, and explicit acyclic generation dependencies before admission; optional absent modules impose no chapter or ending requirement, and flow interaction may loop or remain open.
+    condition: Whenever a work is imported, edited, or admitted to a run.
+    failure: Report the invalid field or unresolved reference and preserve the draft without starting an invalid run.
+    relations:
+      - type: applies_to
+        target: definition.storybook.protocol.modules
+      - type: applies_to
+        target: definition.storybook.protocol.work
+  - id: rule.storybook.protocol.r004
+    kind: rule
+    title: Honest capability support
+    modality: must
+    statement: Separate format understanding, module execution support, and Runtime availability; unsupported required modules block play, unsupported required tasks require an explicit authored fallback or block play, and optional unavailable features remain visibly unavailable rather than successful or implicitly removed.
+    condition: Whenever an imported experience requests a module or generation capability.
+    failure: Expose a specific unavailable reason, execute only declared alternatives, and emit no fabricated artifact or success result.
+    relations:
+      - type: applies_to
+        target: definition.storybook.protocol.generation
+      - type: applies_to
+        target: definition.storybook.protocol.modules
+  - id: rule.storybook.protocol.r005
+    kind: rule
+    title: Immutable session bindings
+    modality: must
+    statement: Starting a run admits a project-scoped immutable snapshot of the selected work, character cards, and world books with source refs; changing a binding starts a new run, and replay forks restore earlier state, transcript, and generation results without inheriting the abandoned future or mutating the original run.
+    condition: Whenever a player starts, resumes, rebinds, or forks an experience.
+    failure: Reject an unresolved required role or a change that silently rewrites an existing run or its authority snapshot.
+    relations:
+      - type: applies_to
+        target: definition.storybook.product.truth-package
+      - type: applies_to
+        target: definition.storybook.protocol.work
+  - id: rule.storybook.protocol.r006
+    kind: rule
+    title: Multimodal results and lifecycle
+    modality: must
+    statement: Persist actual task attempts and typed output collections separately from work definitions, respect declared dependencies and reuse scope, preserve completed outputs across resume, and represent interrupted or unavailable attempts without generated content; player-visible media uses typed safe resources and no imported script or executable styling is evaluated.
+    condition: Whenever a task is requested, completed, retried, restored, or rendered.
+    failure: Block invalid dependencies or unsupported input and output contracts, retain the recoverable run, and show actual failure or authored fallback without marking it as generation success.
+    relations:
+      - type: applies_to
+        target: definition.storybook.protocol.generation

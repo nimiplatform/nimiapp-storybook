@@ -95,6 +95,7 @@ try {
   await mkdir(path.dirname(nativeDestination), { recursive: true });
   await cp(nativePackageRoot, nativeDestination, { recursive: true, dereference: true, force: false });
   await mkdir(packagerTempRoot, { recursive: true });
+  const macIcon = MACOS_BUILD ? await createMacIcon(path.join(appRoot, 'assets', 'app-icon.png'), stagingRoot) : undefined;
 
   const packagePaths = await packager({
     dir: productionSourceRoot,
@@ -114,6 +115,18 @@ try {
     quiet: true,
     derefSymlinks: true,
     extraResource: MACOS_BUILD ? [path.join(stagingRoot, 'nimi-native')] : [],
+    ...(MACOS_BUILD ? {
+      icon: macIcon,
+      extendInfo: { CFBundleIconFile: 'Storybook.icns' },
+      // Packager derives these names from the executable after extendInfo.
+      // Set presentation metadata after that rewrite, before its signing step.
+      afterCopyExtraResources: [async ({ buildPath }) => {
+        const plist = path.join(buildPath, `${APP_EXECUTABLE_NAME}.app`, 'Contents', 'Info.plist');
+        for (const key of ['CFBundleDisplayName', 'CFBundleName']) {
+          await runPackagingTool('/usr/bin/plutil', ['-replace', key, '-string', APP_PRODUCT_NAME, plist]);
+        }
+      }],
+    } : {}),
     // Publisher-side ad-hoc sealing supplies no Developer ID or notarization.
     // Runtime preserves these bytes; Nimi never signs installed third-party code.
     ...(MACOS_BUILD ? { osxSign: {
@@ -186,4 +199,26 @@ async function findPackageRoot(entry, expectedName) {
     if (parent === current) throw new Error(`Unable to locate installed package ${expectedName}.`);
     current = parent;
   }
+}
+
+async function createMacIcon(source, stagingRoot) {
+  const iconset = path.join(stagingRoot, 'Storybook.iconset');
+  await mkdir(iconset);
+  // Preserve the supplied 512px brand asset; only derive packaging resolutions.
+  for (const size of [16, 32, 128, 256, 512]) for (const scale of [1, 2]) {
+    const pixels = size * scale;
+    if (pixels > 512) continue;
+    await runPackagingTool('/usr/bin/sips', ['--resampleHeightWidth', String(pixels), String(pixels), source, '--out', path.join(iconset, `icon_${size}x${size}${scale === 2 ? '@2x' : ''}.png`)]);
+  }
+  const output = path.join(stagingRoot, 'Storybook.icns');
+  await runPackagingTool('/usr/bin/iconutil', ['--convert', 'icns', iconset, '--output', output]);
+  return output;
+}
+async function runPackagingTool(command, args) {
+  await new Promise((resolve, reject) => {
+    const child = spawn(command, args, { stdio: ['ignore', 'ignore', 'pipe'] });
+    let error = ''; child.stderr.on('data', chunk => { error += String(chunk); });
+    child.once('error', reject);
+    child.once('exit', code => code === 0 ? resolve() : reject(new Error(`App packaging tool failed: ${error || command}`)));
+  });
 }

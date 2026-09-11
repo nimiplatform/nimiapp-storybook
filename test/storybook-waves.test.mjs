@@ -24,14 +24,14 @@ function resolveTsc() {
 let engineBuildDir = null;
 function buildEngine() {
   if (engineBuildDir) return engineBuildDir;
-  mkdirSync(path.join(root, '.tmp'), { recursive: true });
-  const dir = mkdtempSync(path.join(root, '.tmp', 'waves-'));
+  mkdirSync(path.join(root, '.nimi', 'local'), { recursive: true });
+  const dir = mkdtempSync(path.join(root, '.nimi', 'local', 'waves-'));
   execFileSync(process.execPath, [
     resolveTsc(),
-    '--outDir', dir, '--rootDir', 'src',
+    '--outDir', dir, '--rootDir', '.', '--resolveJsonModule', 'true',
     '--module', 'NodeNext', '--moduleResolution', 'NodeNext', '--target', 'ES2022',
     '--skipLibCheck', 'true', '--strict', 'true', '--noEmit', 'false',
-    'src/storybook/engine/index.ts',
+    'src/storybook/engine/index.ts', 'src/storybook/content/example.ts',
   ], { cwd: root, stdio: 'pipe' });
   engineBuildDir = dir;
   return dir;
@@ -39,7 +39,9 @@ function buildEngine() {
 
 async function importEngine() {
   const dir = buildEngine();
-  return import(pathToFileURL(path.join(dir, 'storybook', 'engine', 'index.js')).href);
+  const engine = await import(pathToFileURL(path.join(dir, 'src', 'storybook', 'engine', 'index.js')).href);
+  const example = await import(pathToFileURL(path.join(dir, 'src', 'storybook', 'content', 'example.js')).href);
+  return { ...engine, ...example };
 }
 
 const NOW = '2026-06-01T00:00:00.000Z';

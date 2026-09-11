@@ -1,7 +1,7 @@
 schema_version: 1
 app_id: nimi.storybook
 display_name: Storybook
-version: 0.1.5
+version: 0.1.6
 profile: standalone
 manifest_role: submitted-input
 app_access:
@@ -9,3 +9,16 @@ app_access:
 local_development:
   electron:
     renderer_origin: http://127.0.0.1:1473
+metadata:
+  summary: 阅读和创作互动故事，让角色、选择与叙事共同推进故事体验。
+  icon: assets/app-icon.png
+  readme: APP_GUIDE.md
+  release_notes: RELEASE_NOTES.md
+  author: Nimi Team
+  homepage_url: https://github.com/nimiplatform/nimiapp-storybook
+  support_url: https://github.com/nimiplatform/nimiapp-storybook/issues
+capability_contract_refs:
+  - text.generate
+required_standardized_feature_refs: []
+storage_policy:
+  kind: nimi-mediated-default

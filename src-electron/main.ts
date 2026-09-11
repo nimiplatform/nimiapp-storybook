@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { app, BrowserWindow, ipcMain, Menu, protocol, session, webContents } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, Menu, protocol, session, shell, webContents } from 'electron';
+import { externalWebUrl } from './external-links.js';
 import {
   createNimiElectronStandardApplicationMenuTemplate,
   isAllowedElectronRendererUrl,
@@ -64,7 +65,13 @@ async function createMainWindow(): Promise<BrowserWindow> {
     },
   });
   window.setMenuBarVisibility(false);
-  window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  window.webContents.setWindowOpenHandler(({ url }) => {
+    const destination = externalWebUrl(url);
+    if (destination) void shell.openExternal(destination).catch(() => {
+      dialog.showErrorBox('链接未能打开', `请稍后重试，或复制此地址到浏览器：\n${destination}`);
+    });
+    return { action: 'deny' };
+  });
   window.webContents.on('will-navigate', (event, url) => {
     if (!isAllowedElectronRendererUrl(url, [activeRendererUrl()])) event.preventDefault();
   });

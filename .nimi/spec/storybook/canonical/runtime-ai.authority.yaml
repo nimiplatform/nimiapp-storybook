@@ -34,6 +34,10 @@ units:
     kind: definition
     title: Studio asset surface
     meaning: The nimi.storybook.studio.asset surface generates an image artifact for a governed Storybook asset specification.
+  - id: definition.storybook.runtime-ai.surface.play-experience
+    kind: definition
+    title: Imported experience generation
+    meaning: The nimi.storybook.play.experience surface generates open character interaction or a declared text task from an admitted experience and bound resources, retaining typed results and Runtime provenance.
   - id: rule.storybook.runtime-ai.r001
     kind: rule
     title: Runtime account boundary
@@ -44,6 +48,14 @@ units:
     relations:
       - type: applies_to
         target: definition.storybook.runtime-ai.runtime-session
+  - id: definition.storybook.runtime-ai.surface.studio-foundation
+    kind: definition
+    title: Studio adaptation foundation surface
+    meaning: The nimi.storybook.studio.foundation surface produces a structured adaptation proposal with a premise, player role, cast, dramatic tension, style, and spoiler-safe direction from retained source text for creator review.
+  - id: definition.storybook.runtime-ai.surface.studio-chapter
+    kind: definition
+    title: Studio branching chapter surface
+    meaning: The nimi.storybook.studio.chapter surface produces a bounded playable chapter graph with concrete choices, state consequences, and distinct reachable endings from the approved project foundation; its output is validated and admitted with generation provenance before Play promotion.
   - id: rule.storybook.runtime-ai.r002
     kind: rule
     title: No OAuth exchange surface
@@ -107,8 +119,14 @@ units:
       - type: applies_to
         target: definition.storybook.runtime-ai.surface.play-choices
       - type: applies_to
+        target: definition.storybook.runtime-ai.surface.play-experience
+      - type: applies_to
         target: definition.storybook.runtime-ai.surface.play-scene
       - type: applies_to
         target: definition.storybook.runtime-ai.surface.studio-asset
       - type: applies_to
         target: definition.storybook.runtime-ai.surface.studio-bible
+      - type: applies_to
+        target: definition.storybook.runtime-ai.surface.studio-chapter
+      - type: applies_to
+        target: definition.storybook.runtime-ai.surface.studio-foundation

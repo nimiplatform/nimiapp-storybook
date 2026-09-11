@@ -12,9 +12,10 @@ import { type PublicCastMember, buildPlayProjection } from './projection.js';
 import { isAssetUsable } from './assets.js';
 import { type PlayableChapter, findNode } from './run.js';
 import { validateDefaultProgression } from './choices.js';
+import appPackage from '../../../package.json' with { type: 'json' };
 
 export const PREPARED_PACKAGE_SCHEMA_VERSION = 1;
-export const STORYBOOK_APP_VERSION = '0.1.0';
+export const STORYBOOK_APP_VERSION = appPackage.version;
 
 export type AppCompatRange = { min: string; max: string };
 
@@ -34,6 +35,7 @@ export type AssetManifestEntry = {
   requiredness: 'required' | 'optional';
   state: string;
   present: boolean;
+  artifactRef?: string;
 };
 
 export type RedactionProof = {
@@ -52,6 +54,14 @@ export type PreparedValidatorResult = {
 export type PreparedStorybookPackage = {
   manifest: PackageManifest;
   publicSummary: string;
+  presentation?: {
+    title: string;
+    themes: string[];
+    playerRole: string;
+    variableLabels: Record<string, string>;
+    achievementLabels: Record<string, string>;
+    endingLabels: Record<string, string>;
+  };
   contentBoundaries: string[];
   publicCast: PublicCastMember[];
   playerEntryPosture: 'low-configuration';
@@ -110,6 +120,9 @@ function buildRedactionProof(pkg: StorybookTruthPackage, publicCast: PublicCastM
  */
 export function buildPreparedPackage(input: { pkg: StorybookTruthPackage; producer: string; now: string }): Result<PreparedStorybookPackage> {
   const { pkg, producer, now } = input;
+  if (pkg.governance.lifecycle !== 'play-ready') {
+    return fail('prepared_package_invalid_validator_result', '故事还没有完成编排，请先确认设定并生成章节。');
+  }
 
   const truthValidation = validateTruthPackage(pkg);
   const playProjection = buildPlayProjection(pkg);
@@ -136,6 +149,7 @@ export function buildPreparedPackage(input: { pkg: StorybookTruthPackage; produc
     requiredness: asset.requiredness,
     state: asset.state,
     present: isAssetUsable(asset),
+    artifactRef: isAssetUsable(asset) ? asset.artifactRef : undefined,
   }));
 
   const validatorResult: PreparedValidatorResult = {
@@ -159,6 +173,14 @@ export function buildPreparedPackage(input: { pkg: StorybookTruthPackage; produc
       producer,
     },
     publicSummary: playProjection.payload.storySummary,
+    presentation: {
+      title: pkg.adaptationBrief?.title || producer,
+      themes: pkg.bible?.themes ?? [],
+      playerRole: pkg.scenarioFrame?.playerPosition ?? '',
+      variableLabels: Object.fromEntries((pkg.stateEndingMatrix?.variables ?? []).map((v) => [v.id, v.label])),
+      achievementLabels: Object.fromEntries((pkg.stateEndingMatrix?.achievements ?? []).map((v) => [v.id, v.label])),
+      endingLabels: Object.fromEntries((pkg.stateEndingMatrix?.endings ?? []).map((v) => [v.id, v.label])),
+    },
     contentBoundaries: playProjection.payload.contentBoundaries,
     publicCast: playProjection.payload.publicCast,
     playerEntryPosture: 'low-configuration',
@@ -204,6 +226,25 @@ export function validatePreparedPackage(
     return validationReport([{ code: 'prepared_package_invalid_manifest', message: 'Prepared package must be a non-null object.', pointers: ['(root)'] }]);
   }
 
+  // Validate untrusted nested JSON before traversal or any player UI consumes it.
+  const stringList = (value: unknown) => Array.isArray(value) && value.every((v) => typeof v === 'string');
+  const stringMap = (value: unknown) => isRecord(value) && Object.values(value).every((v) => typeof v === 'string');
+  const effectsValid = (value: unknown) => value === undefined || (Array.isArray(value) && value.every((e) => isRecord(e) && typeof e.target === 'string' && (
+    (e.op === 'add-var' && typeof e.value === 'number' && Number.isFinite(e.value)) || (e.op === 'set-flag' && typeof e.value === 'boolean') || e.op === 'award-achievement'
+  )));
+  const chapters = prepared.playableChapters;
+  if (!Array.isArray(chapters) || !chapters.length || !chapters.every((c) => isRecord(c) && typeof c.id === 'string' && typeof c.title === 'string' && typeof c.startNodeId === 'string' && Array.isArray(c.nodes) && c.nodes.length > 0 && c.nodes.every((n) =>
+    isRecord(n) && typeof n.id === 'string' && typeof n.text === 'string' && n.text.trim() && (n.title === undefined || typeof n.title === 'string') && (n.speaker === undefined || typeof n.speaker === 'string') &&
+    (n.isEnding === undefined || typeof n.isEnding === 'boolean') && (!n.isEnding || typeof n.endingId === 'string') && effectsValid(n.effects) && Array.isArray(n.choices) && n.choices.every((choice) => isRecord(choice) && typeof choice.id === 'string' && typeof choice.label === 'string' && choice.label.trim() && typeof choice.targetNodeId === 'string' && effectsValid(choice.effects))
+  ))) {
+    return validationReport([{ code: 'prepared_package_invalid_manifest', message: '故事场景或选择的数据不完整。' }]);
+  }
+  if (chapters.some((c) => new Set(c.nodes.map((n: { id: string }) => n.id)).size !== c.nodes.length) || new Set(chapters.map((c) => c.id)).size !== chapters.length) findings.push({ code: 'prepared_package_invalid_manifest', message: '故事包含重复的场景标识。' });
+  if (!stringList(prepared.contentBoundaries) || !Array.isArray(prepared.publicCast) || !prepared.publicCast.every((c) => isRecord(c) && typeof c.name === 'string' && typeof c.voice === 'string' && stringList(c.publicFacts))) findings.push({ code: 'prepared_package_invalid_manifest', message: '故事人物或内容说明不完整。' });
+  if (!Array.isArray(prepared.assetManifest) || !prepared.assetManifest.every((a) => isRecord(a) && typeof a.kind === 'string' && (a.artifactRef === undefined || typeof a.artifactRef === 'string'))) findings.push({ code: 'prepared_package_invalid_manifest', message: '故事素材清单不完整。' });
+  const presentation = prepared.presentation;
+  if (presentation !== undefined && (!isRecord(presentation) || typeof presentation.title !== 'string' || !stringList(presentation.themes) || typeof presentation.playerRole !== 'string' || !stringMap(presentation.variableLabels) || !stringMap(presentation.achievementLabels) || !stringMap(presentation.endingLabels))) findings.push({ code: 'prepared_package_invalid_manifest', message: '故事简介或状态名称不完整。' });
+
   // --- manifest ---
   const manifest = prepared.manifest;
   if (!isRecord(manifest)) {
@@ -239,6 +280,8 @@ export function validatePreparedPackage(
       findings.push({ code: 'prepared_package_missing_start_entry', message: `Start chapter "${start.chapterId}" is not in the baked playable chapters.`, pointers: ['startSemantics.chapterId'] });
     } else if (!findNode(startChapter, String(start.nodeId))) {
       findings.push({ code: 'prepared_package_missing_start_entry', message: `Start node "${start.nodeId}" is not in chapter "${startChapter.id}".`, pointers: ['startSemantics.nodeId'] });
+    } else if (startChapter.startNodeId !== start.nodeId) {
+      findings.push({ code: 'prepared_package_missing_start_entry', message: '故事开场与章节起点不一致。' });
     }
   }
 
@@ -295,6 +338,13 @@ export function validatePreparedPackage(
   const stateMatrix = prepared.stateMatrix;
   if (!isRecord(stateMatrix) || !isRecord(stateMatrix.variables) || !isRecord(stateMatrix.flags)) {
     findings.push({ code: 'prepared_package_invalid_manifest', message: 'Prepared package stateMatrix must include variables and flags objects.', pointers: ['stateMatrix'] });
+  } else {
+    for (const [key, value] of Object.entries(stateMatrix.variables)) if (typeof value !== 'number' || !Number.isFinite(value)) {
+      findings.push({ code: 'prepared_package_invalid_manifest', message: 'State variables must contain finite numbers.', pointers: [`stateMatrix.variables.${key}`] });
+    }
+    for (const [key, value] of Object.entries(stateMatrix.flags)) if (typeof value !== 'boolean') {
+      findings.push({ code: 'prepared_package_invalid_manifest', message: 'State flags must contain booleans.', pointers: [`stateMatrix.flags.${key}`] });
+    }
   }
 
   // --- staleness against a locally held truth package version, if provided ---

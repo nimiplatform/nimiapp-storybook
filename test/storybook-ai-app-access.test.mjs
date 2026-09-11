@@ -102,3 +102,26 @@ test('unconfigured text and image generation fail closed without dispatch', asyn
   assert.equal(image.ok, false);
   assert.equal(image.reason, 'capability-unavailable');
 });
+
+test('long source and chapter context preserve full text in separately bounded App Access messages', () => {
+  const source = '字'.repeat(8000);
+  const chapter = 'scene '.repeat(3000);
+  const request = buildStorybookTextCandidateInput({ prompt: chapter.trim(), context: [source], directive: '只使用完整原文。', temperature: 0.7, topP: 1, maxTokens: 4096 });
+  assert.equal(request.messages.length, 3);
+  assert.equal(request.messages[1].text, source);
+  assert.equal(request.messages[2].text, chapter.trim());
+  assert.throws(() => buildStorybookTextCandidateInput({ prompt: 'write', context: ['x'.repeat(32769)], temperature: 0.7, topP: 1, maxTokens: 4096 }), /32 KiB/);
+});
+
+test('experience prompts preserve V2 post-history placement within the protected message contract', () => {
+  const messages = [
+    { role: 'system', text: 'card system' },
+    { role: 'user', text: 'history and player input' },
+    { role: 'system', text: 'card post-history instructions' },
+  ];
+  const input = { messages, temperature: 0.7, topP: 1, maxTokens: 1024 };
+  assert.deepEqual(buildStorybookTextCandidateInput(input).messages, messages);
+  assert.throws(() => buildStorybookTextCandidateInput({ ...input, prompt: 'ambiguous second input' }), /cannot be mixed/);
+  assert.throws(() => buildStorybookTextCandidateInput({ ...input, messages: [{ role: 'assistant', text: 'unsupported carrier role' }] }), /Unsupported/);
+  assert.throws(() => buildStorybookTextCandidateInput({ ...input, messages: [] }), /message count/);
+});

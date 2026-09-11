@@ -120,6 +120,7 @@ export function restoreCheckpoint(run: StoryRun, snapshot: BranchSnapshot, chapt
     currentNodeId: snapshot.atNodeId,
     variables: { ...snapshot.variables },
     flags: { ...snapshot.flags },
+    achievements: [...(snapshot.achievements ?? [])],
     status: 'active',
     endingId: undefined,
     updatedAt: now,

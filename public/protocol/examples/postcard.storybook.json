@@ -1,0 +1,93 @@
+{
+  "format": "nimi.storybook",
+  "version": "0.1.0",
+  "title": "寄给还没到来的你",
+  "summary": "与一个人聊聊今天，留下一张只属于这次相遇的明信片。",
+  "roles": {
+    "companion": {
+      "label": "与你写信的人"
+    }
+  },
+  "resources": {
+    "garden": {
+      "type": "media",
+      "uri": "./stories/garden.jpg",
+      "mimeType": "image/jpeg",
+      "alt": "作者准备的雨夜小店插画"
+    }
+  },
+  "modules": {
+    "nimi.storybook.conversation": {
+      "version": "1",
+      "config": {
+        "context": "你和玩家准备把这次相遇写成寄往未来的明信片。自然交谈，问对方希望未来记得什么。",
+        "opening": [
+          {
+            "type": "text",
+            "text": "桌上放着一张空白明信片。今天的某个瞬间，值得寄给未来。"
+          }
+        ]
+      }
+    },
+    "nimi.storybook.generation": {
+      "version": "1",
+      "config": {
+        "tasks": [
+          {
+            "id": "letter",
+            "label": "写下这次相遇",
+            "capability": "text.generate",
+            "inputs": [
+              {
+                "type": "text",
+                "text": "根据我们实际发生的交谈，用你的角色口吻写一张寄给未来的明信片，150 字以内。只写卡片正文。若还没交谈，就记录这个刚开始的时刻，不虚构过去的共同经历。"
+              }
+            ],
+            "outputs": [
+              {
+                "id": "body",
+                "kind": "text"
+              }
+            ],
+            "trigger": {
+              "event": "manual"
+            },
+            "reuse": "run"
+          },
+          {
+            "id": "picture",
+            "label": "为这一刻配一幅画",
+            "capability": "image.generate",
+            "inputs": [
+              {
+                "type": "output",
+                "task": "letter",
+                "output": "body"
+              }
+            ],
+            "outputs": [
+              {
+                "id": "image",
+                "kind": "image"
+              }
+            ],
+            "trigger": {
+              "event": "enter"
+            },
+            "dependsOn": [
+              "letter"
+            ],
+            "reuse": "run",
+            "required": false,
+            "fallback": [
+              {
+                "type": "resource",
+                "ref": "garden"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

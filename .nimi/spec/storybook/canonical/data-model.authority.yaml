@@ -5,7 +5,7 @@ units:
   - id: definition.storybook.data-model.truth-package-record
     kind: definition
     title: Truth package root record
-    meaning: The canonical StorybookTruthPackage record has schema_version 1 at src/storybook/engine/truth.ts and requires the top-level fields id, projectId, version, governance, rules, scenarioFrame, sourceCast, bible, adaptationBrief, visualStyleGuide, divergences, branchTopology, stateEndingMatrix, chapters, assets, evidence, derivations, projectionInputs, feedback, compat, and realmImports.
+    meaning: StorybookProjectAuthority is the union of the authored StorybookTruthPackage at src/storybook/engine/truth.ts and ExperienceTruthPackage at src/storybook/engine/protocol/session.ts; an experience authority owns its work, immutable bound character and lorebook resources, project identity, and import refs, while run state and generated outputs remain separate projections.
   - id: definition.storybook.data-model.truth-ref
     kind: definition
     title: Truth reference
@@ -38,9 +38,9 @@ units:
     kind: rule
     title: Root authority record
     modality: must
-    statement: StorybookTruthPackage is the root record for project authority and conforms to the registered canonical record shape.
+    statement: Every project authority conforms to a registered StorybookProjectAuthority shape, with one canonical authority per authored edition or admitted experience; imported resource documents become authority only through explicit admission and binding.
     condition: Whenever Storybook creates, reads, validates, or projects project authority.
-    failure: Reject a project authority record that is not a conforming StorybookTruthPackage.
+    failure: Reject a project authority record that does not conform to either registered member of StorybookProjectAuthority, authored StorybookTruthPackage or ExperienceTruthPackage.
     relations:
       - type: applies_to
         target: definition.storybook.data-model.truth-package-record

@@ -21,4 +21,5 @@ export * from './realm.js';
 export * from './memory.js';
 export * from './prepared-package.js';
 export * from './validation.js';
-export * from './example.js';
+export * from './composer.js';
+export * from './play-session.js';

@@ -23,20 +23,40 @@ function nowIso(): string {
 export function StudioPlaytest({ record }: { record: StoredProjectRecord }) {
   const pkg = record.truthPackage;
   const projection = buildPlayProjection(pkg);
-  const startChapter = pkg.chapters.find((chapter) => chapter.id === projection.payload.startChapterId) ?? null;
+  const startChapter =
+    pkg.chapters.find((chapter) => chapter.id === projection.payload.startChapterId) ?? null;
 
   const [run, setRun] = useState<StoryRun | null>(null);
 
   function begin() {
     if (!startChapter) return;
-    setRun(startRun({ projectId: pkg.projectId, packageId: `playtest:${pkg.id}`, chapter: startChapter, variables: projection.payload.initialVariables, flags: projection.payload.initialFlags, now: nowIso() }));
+    setRun(
+      startRun({
+        projectId: pkg.projectId,
+        packageId: `playtest:${pkg.id}`,
+        chapter: startChapter,
+        variables: projection.payload.initialVariables,
+        flags: projection.payload.initialFlags,
+        now: nowIso(),
+      }),
+    );
   }
 
   if (!startChapter) {
     return (
       <Surface className="sb-section" material="glass-regular" tone="panel">
-        <div className="sb-section__head"><div><h2>试玩（playtest）</h2><p>项目尚不可玩：还没有可解析的起始章节。请先审批 Bible 并生成章节。</p></div></div>
-        <InlineAlert tone="warning"><div className="runtime-alert-copy"><strong>暂不可试玩</strong><span>play-ready 前不会伪造运行。</span></div></InlineAlert>
+        <div className="sb-section__head">
+          <div>
+            <h2>试玩（playtest）</h2>
+            <p>项目尚不可玩：还没有可解析的起始章节。请先审批 Bible 并生成章节。</p>
+          </div>
+        </div>
+        <InlineAlert tone="warning">
+          <div className="runtime-alert-copy">
+            <strong>暂不可试玩</strong>
+            <span>play-ready 前不会伪造运行。</span>
+          </div>
+        </InlineAlert>
       </Surface>
     );
   }
@@ -54,28 +74,49 @@ export function StudioPlaytest({ record }: { record: StoredProjectRecord }) {
     <Surface className="sb-section" material="glass-regular" tone="panel">
       <div className="sb-section__head">
         <div>
-          <h2>试玩（playtest · Play 模式预览）</h2>
-          <p>用与玩家一致的选择优先引擎预览，不暴露创作者控件，且不写入任何持久状态。</p>
+          <h2>先走一遍自己的故事</h2>
+          <p>试试这些选择会把你带到哪里。这里不记录游玩进度，满意后就可以放上书架。</p>
         </div>
-        <StatusBadge tone="info">ephemeral</StatusBadge>
+        <StatusBadge tone="info">不记录进度</StatusBadge>
       </div>
       {!run ? (
-        <div className="sb-actions"><Button type="button" tone="primary" size="sm" onClick={begin}>开始试玩</Button></div>
+        <div className="sb-actions">
+          <Button type="button" tone="primary" size="sm" onClick={begin}>
+            开始试玩
+          </Button>
+        </div>
       ) : (
         <>
           <div className="sb-chip-row">
             <StatusBadge tone="neutral">{startChapter.title}</StatusBadge>
-            {Object.entries(run.variables).map(([key, value]) => <StatusBadge key={key} tone="info">{key}: {value}</StatusBadge>)}
-            {run.achievements.map((a) => <StatusBadge key={a} tone="success">🏆 {a}</StatusBadge>)}
+            {Object.entries(run.variables).map(([key, value]) => (
+              <StatusBadge key={key} tone="info">
+                {pkg.stateEndingMatrix?.variables.find((v) => v.id === key)?.label || key}: {value}
+              </StatusBadge>
+            ))}
+            {run.achievements.map((a) => (
+              <StatusBadge key={a} tone="success">
+                🏆 {a}
+              </StatusBadge>
+            ))}
             {run.status === 'ended' ? <StatusBadge tone="success">已结束</StatusBadge> : null}
           </div>
           <p className="sb-node-text">{node?.text ?? '（缺失节点文本）'}</p>
           {run.status === 'ended' ? (
-            <div className="sb-actions"><Button type="button" tone="secondary" size="sm" onClick={begin}>重新试玩</Button></div>
+            <div className="sb-actions">
+              <Button type="button" tone="secondary" size="sm" onClick={begin}>
+                重新试玩
+              </Button>
+            </div>
           ) : (
             <div className="sb-choices">
               {choices.map((choice) => (
-                <button key={choice.id} type="button" className="sb-choice-btn" onClick={() => pick(choice)}>
+                <button
+                  key={choice.id}
+                  type="button"
+                  className="sb-choice-btn"
+                  onClick={() => pick(choice)}
+                >
                   {choice.label}
                   <small>{choice.source === 'authored' ? '作者选项' : '生成选项'}</small>
                 </button>
