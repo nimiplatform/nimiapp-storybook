@@ -7,7 +7,8 @@ standalone single-app layout.
 
 The macOS bundle displays **Storybook** and derives its ICNS icon from
 `assets/app-icon.png`. Its internal `.app` path and executable remain
-`nimiapp-storybook-shell`. The packaging hook sets display metadata after
+`nimiapp-storybook-shell`. `CFBundleName` also retains the executable name so Electron can resolve its
+Helper App. The packaging hook sets `CFBundleDisplayName` after
 Electron Packager's name rewrite and before ad-hoc signing. Ad-hoc sealing is
 not Developer ID signing or notarization; package checks do not establish
 platform admission or installed-app acceptance.

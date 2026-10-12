@@ -122,9 +122,9 @@ try {
       // Set presentation metadata after that rewrite, before its signing step.
       afterCopyExtraResources: [async ({ buildPath }) => {
         const plist = path.join(buildPath, `${APP_EXECUTABLE_NAME}.app`, 'Contents', 'Info.plist');
-        for (const key of ['CFBundleDisplayName', 'CFBundleName']) {
-          await runPackagingTool('/usr/bin/plutil', ['-replace', key, '-string', APP_PRODUCT_NAME, plist]);
-        }
+        // Electron resolves its Helper bundle from CFBundleName. Keep that
+        // internal name aligned with the executable; only the display name is presentation.
+        await runPackagingTool('/usr/bin/plutil', ['-replace', 'CFBundleDisplayName', '-string', APP_PRODUCT_NAME, plist]);
       }],
     } : {}),
     // Publisher-side ad-hoc sealing supplies no Developer ID or notarization.
