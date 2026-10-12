@@ -1,5 +1,17 @@
 # Storybook
 
+## Published dependency and Catalog acceptance (2026-10-13)
+
+Current public release: [0.1.9](https://github.com/nimiplatform/nimiapp-storybook/releases/tag/v0.1.9); [Registry admission #89](https://github.com/nimiplatform/nimi-app-registry/pull/89) is merged for macOS arm64 and Windows x64. Frozen locks resolve published SDK 0.21.0, Kit/native 0.19.3, App Tools 0.12.1 and nimi-coding 0.6.5 from npm, with no local Nimi archive or source-link overrides.
+
+Version 0.1.8 passed its release builds but exited during actual macOS Catalog launch: changing CFBundleName broke Electron's Helper App lookup. Version 0.1.9 keeps that internal name aligned with the executable and sets CFBundleDisplayName for presentation. The earlier immutable release and tag remain intact.
+
+All 107 repository tests, production checks, the rebuilt macOS package and both managed target builds passed. The Registry owner verified exact release hashes, tagged license bytes, build provenance and immutable release posture. Source Nimi Home with its matching protected Runtime (Nimi main 35498102b) completed the real Catalog update from 0.1.8 to 0.1.9 and launched the actual installed package with App Access ready.
+
+In 雨天营业的信件店, the formal AI improvisation control sent the synthetic BLUEBIRD-749 prompt to the configured real text model. 青禾 returned a complete response. A full Home stop/launch and Continue story restored the exact prompt and response; choosing the first authored action advanced to scene 02 with the saved story-line count at one. No fixture supplied the AI response, and the authored story choices remained distinct from AI improvisation.
+
+**NOT-VERIFIED:** Windows GUI installation and AI use; Studio generation and imports; account-switch invalidation. Image generation remains explicitly unavailable in this iteration. The adjacent source Home window-focus failure is recorded in [Overtone's acceptance notes](https://github.com/nimiplatform/nimiapp-overtone/blob/main/README.md); launch, stop, actual AI and saved-data reopening passed.
+
 AI驱动的互动叙事应用
 
 Profile: `standalone`
@@ -67,8 +79,8 @@ truth, and scope authorization; this scaffold does not mint those outcomes.
 Electron applies the Desktop-prepared technical Host profile before loading Kit.
 A real session invalidation destroys the old renderer, retiring its story cache,
 editor state and pending work; the fresh renderer reloads the current account's
-managed App records. This development repair has not undergone a real App journey
-or installation acceptance in this iteration.
+managed App records. Launch and stop/restart acceptance is recorded below.
+Account-switch invalidation is NOT-VERIFIED in this release.
 
 ## Release and Governance
 
@@ -76,9 +88,9 @@ or installation acceptance in this iteration.
 - `RELEASE.md` defines the tag/manual release flow and lockstep version bump.
 - `ADMISSION.md` is a listing request runbook, not platform approval.
 
-## Windows package and release
+## macOS and Windows package and release
 
-The production target is Windows x86_64 using Desktop-supervised Electron.
+The declared production targets are macOS arm64 and Windows x86_64, using Desktop-supervised Electron.
 Build and inspect the package from this repository:
 
 ```bash
