@@ -1,6 +1,6 @@
 import type { NimiPortableAppAIConfig, NimiPortableAppAIConfigIntent } from '@nimiplatform/sdk/ai';
 import { runtimeAIConfigStructToJson } from '@nimiplatform/sdk/ai';
-import type { NimiLocalAppTextCandidateInput } from '@nimiplatform/sdk/app';
+import type { NimiLocalAppTextTurnInput } from '@nimiplatform/sdk/app';
 import type { StorybookRuntimePlatformClient } from '../../shell/auth/runtime-platform.js';
 import { STORYBOOK_TEXT_GENERATE_CAPABILITY_ID } from '../../shell/ai/storybook-ai-requirements.ts';
 import { loadStorybookAIConfig, versionStorybookAIConfig } from './storybook-ai-config-store.ts';
@@ -42,9 +42,9 @@ type ResolvedTextIntent = {
   readonly intent: NimiPortableAppAIConfigIntent;
   readonly route: 'local' | 'cloud';
   readonly configHash: string;
-  readonly temperature: number;
-  readonly topP: number;
-  readonly maxTokens: number;
+  readonly temperature?: number;
+  readonly topP?: number;
+  readonly maxTokens?: number;
 };
 
 export function resolveStorybookTextIntent(
@@ -61,9 +61,9 @@ export function resolveStorybookTextIntent(
     );
   }
   const defaults = runtimeAIConfigStructToJson(intent.defaults);
-  const temperature = boundedNumber(defaults.temperature, 0, 2, 0.7);
-  const topP = boundedNumber(defaults.topP, 0, 1, 1);
-  const maxTokens = boundedInteger(defaults.maxTokens, 1, MAX_TOKENS, 1024);
+  const temperature = optionalNumber(defaults.temperature, 0, 2, 'temperature');
+  const topP = optionalNumber(defaults.topP, 0, 1, 'topP');
+  const maxTokens = optionalInteger(defaults.maxTokens, 0, MAX_TOKENS, 'maxTokens');
   return {
     intent,
     route: intent.route.oneofKind,
@@ -74,15 +74,15 @@ export function resolveStorybookTextIntent(
   };
 }
 
-export function buildStorybookTextCandidateInput(input: {
+export function buildStorybookTextInput(input: {
   readonly prompt?: string;
   readonly messages?: readonly { role: 'system' | 'user'; text: string }[];
   readonly directive?: string;
   readonly context?: string[];
-  readonly temperature: number;
-  readonly topP: number;
-  readonly maxTokens: number;
-}): NimiLocalAppTextCandidateInput {
+  readonly temperature?: number;
+  readonly topP?: number;
+  readonly maxTokens?: number;
+}): NimiLocalAppTextTurnInput {
   if (input.messages && (input.prompt !== undefined || input.directive !== undefined || input.context !== undefined)) throw inputError('Explicit messages cannot be mixed with prompt fields.');
   const prompt = input.messages ? '' : exactText(input.prompt, 'Text generation prompt');
   const directive =
@@ -111,11 +111,14 @@ export function buildStorybookTextCandidateInput(input: {
   if (totalBytes > MAX_PROMPT_BYTES) {
     throw inputError('Text candidate prompt exceeds the 64 KiB App Access bound.');
   }
+  const temperature = optionalNumber(input.temperature, 0, 2, 'temperature');
+  const topP = optionalNumber(input.topP, 0, 1, 'topP');
+  const maxTokens = optionalInteger(input.maxTokens, 0, MAX_TOKENS, 'maxTokens');
   return {
     messages,
-    temperature: boundedNumber(input.temperature, 0, 2, 0.7),
-    topP: boundedNumber(input.topP, 0, 1, 1),
-    maxTokens: boundedInteger(input.maxTokens, 1, MAX_TOKENS, 1024),
+    ...(temperature !== undefined ? { temperature } : {}),
+    ...(topP !== undefined ? { topP } : {}),
+    ...(maxTokens !== undefined ? { maxTokens } : {}),
   };
 }
 
@@ -128,6 +131,7 @@ export async function invokeStorybookText(
     surfaceId: string;
     maxTokens?: number;
     context?: string[];
+    signal?: AbortSignal;
   },
   config?: NimiPortableAppAIConfig | null,
 ): Promise<StorybookTextResult> {
@@ -139,11 +143,13 @@ export async function invokeStorybookText(
     );
   }
   try {
+    input.signal?.throwIfAborted();
     const resolved = resolveStorybookTextIntent(
       config === undefined ? await loadStorybookAIConfig(client.aiConfig) : config,
     );
     if ('ok' in resolved) return resolved;
-    const request = buildStorybookTextCandidateInput({
+    input.signal?.throwIfAborted();
+    const request = buildStorybookTextInput({
       prompt: input.prompt,
       messages: input.messages,
       directive: input.directive,
@@ -152,22 +158,34 @@ export async function invokeStorybookText(
       topP: resolved.topP,
       maxTokens: input.maxTokens ?? resolved.maxTokens,
     });
-    const output = await client.ai.text.generateCandidate(request);
-    if (!output.text?.trim() || output.finishReason === 'length') {
+    // @nimi-authority: rule.storybook.runtime-ai.r004
+    // Full SYNC text preserves every authored system-message position. The
+    // narrow candidate operation admits only one prefix system message.
+    const result = await client.ai.scenario.execute({ type: 'text-generate', ...request },
+      input.signal ? { signal: input.signal } : undefined);
+    input.signal?.throwIfAborted();
+    if (!('type' in result.output) || result.output.type !== 'text-generate'
+      || result.output.items.some(item => item.type === 'tool-call')) throw new Error('STORYBOOK_TEXT_OUTPUT_INVALID');
+    const output = result.output;
+    // Storybook submits App history as labelled source data, not model-turn
+    // continuation. Valid opaque items do not become displayed narrative text.
+    const text = output.items.filter(item => item.type === 'text').map(item => item.text).join('');
+    if (!text.trim() || output.finishReason !== 'stop') {
       return storybookAIUnavailable(
         'text.generate',
         'runtime-call-failed',
-        output.text?.trim() ? 'AI 输出被截断，请重试或缩短原文。' : 'AI 没有返回内容，请重试。',
+        output.finishReason === 'content-filter' ? 'AI 输出被过滤，请调整输入后重试。'
+          : text.trim() ? 'AI 输出未完整结束，请重试或缩短原文。' : 'AI 没有返回内容，请重试。',
       );
     }
     return {
       ok: true,
       capability: 'text.generate',
-      text: output.text,
+      text,
       finishReason: output.finishReason,
       route: resolved.route,
       configHash: resolved.configHash,
-      traceId: output.traceId,
+      traceId: result.traceId,
     };
   } catch (error) {
     const reason = reasonFromSdkError(error);
@@ -234,21 +252,21 @@ function exactText(value: unknown, field: string): string {
   return value;
 }
 
-function boundedNumber(value: unknown, minimum: number, maximum: number, fallback: number): number {
-  return typeof value === 'number' && Number.isFinite(value) && value >= minimum && value <= maximum
-    ? value
-    : fallback;
+function optionalNumber(value: unknown, minimum: number, maximum: number, field: string): number | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < minimum || value > maximum) throw inputError(`Explicit ${field} is outside the text-generation limits.`);
+  return value;
 }
 
-function boundedInteger(
+function optionalInteger(
   value: unknown,
   minimum: number,
   maximum: number,
-  fallback: number,
-): number {
-  return Number.isSafeInteger(value) && Number(value) >= minimum && Number(value) <= maximum
-    ? Number(value)
-    : fallback;
+  field: string,
+): number | undefined {
+  if (value === undefined) return undefined;
+  if (!Number.isSafeInteger(value) || Number(value) < minimum || Number(value) > maximum) throw inputError(`Explicit ${field} is outside the text-generation limits.`);
+  return Number(value);
 }
 
 function utf8Bytes(value: string): number {

@@ -62,7 +62,6 @@ async function compose<T>(input: {
         input.kind === 'story-foundation'
           ? 'nimi.storybook.studio.foundation'
           : 'nimi.storybook.studio.chapter',
-      maxTokens: 4096,
     });
     if (!result.ok)
       return {

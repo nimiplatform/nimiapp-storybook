@@ -1,5 +1,5 @@
 build_profile_ref: electron-packager-pnpm-vite
-toolchain_version: node>=24;pnpm>=10;electron=42
+toolchain_version: node>=24;pnpm>=10;electron=44
 build_command: pnpm run build:electron:production
 test_command: pnpm run test
 output_path: dist-electron-package

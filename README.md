@@ -32,10 +32,13 @@ audit output are submitted inputs and pre-submission self-checks only.
 
 ## Boundaries
 
-- Text execution uses only the protected `ai.text.generateCandidate` App Access
-  surface and Runtime-owned App AIConfig. No provider/model is hardcoded and there
-  is no app-local provider routing. Image generation remains typed unavailable
-  until App Access provides that capability; Storybook never fabricates output.
+- Text execution uses protected synchronous `ai.scenario.execute` with a
+  `text-generate` spec and Runtime-owned App AIConfig. Authored system-message
+  positions and complete terminal output are preserved. Unset generation controls
+  stay unset, while explicit configuration or request controls reach Runtime
+  admission unchanged. No provider/model is hardcoded and there is no App-local
+  provider routing. Storybook image generation remains typed unavailable in this
+  iteration; Storybook never fabricates output.
 - Storybook memory, run state, transcripts, and feedback patches stay app-internal
   and project-scoped. They never mutate Runtime agent memory, Realm world state, or
   shared Nimi ecosystem memory.
@@ -60,6 +63,12 @@ pnpm nimicoding:doctor
 the protected local-app session posture and never owns account login or credentials. Upstream
 Platform/Runtime review owns release descriptors, ordinary visibility, install
 truth, and scope authorization; this scaffold does not mint those outcomes.
+
+Electron applies the Desktop-prepared technical Host profile before loading Kit.
+A real session invalidation destroys the old renderer, retiring its story cache,
+editor state and pending work; the fresh renderer reloads the current account's
+managed App records. This development repair has not undergone a real App journey
+or installation acceptance in this iteration.
 
 ## Release and Governance
 

@@ -2,12 +2,23 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { app, BrowserWindow, dialog, ipcMain, Menu, protocol, session, shell, webContents } from 'electron';
 import { externalWebUrl } from './external-links.js';
-import {
+import { configureNimiElectronAppHostProfile } from '@nimiplatform/kit/shell/electron/host-profile';
+
+// @nimi-authority: rule.storybook.runtime-ai.r001
+try {
+  configureNimiElectronAppHostProfile(app);
+} catch (error) {
+  process.stderr.write(`[nimi-app-host-profile] ${error instanceof Error ? error.message : String(error)}\n`);
+  app.exit(78);
+  throw error;
+}
+
+const {
   createNimiElectronStandardApplicationMenuTemplate,
   isAllowedElectronRendererUrl,
   registerNimiElectronAppAssetProtocolScheme,
   registerNimiElectronAppBridge,
-} from '@nimiplatform/kit/shell/electron/main';
+} = await import('@nimiplatform/kit/shell/electron/main');
 
 const STORYBOOK_APP_ID = 'nimi.storybook';
 declare const __NIMI_ELECTRON_PRODUCTION__: boolean;
@@ -19,6 +30,8 @@ const appRoot = path.resolve(currentDir, '..');
 const preloadPath = path.join(currentDir, 'preload.cjs');
 const rendererDistUrl = pathToFileURL(path.join(appRoot, 'dist', 'index.html')).toString();
 const developmentRendererUrl = readDevelopmentRendererUrl();
+let resettingRenderer = false;
+let quitting = false;
 
 app.setName('Storybook');
 app.commandLine.appendSwitch('disable-background-networking');
@@ -38,6 +51,7 @@ async function bootstrapElectron(): Promise<void> {
     allowedRendererUrls: [activeRendererUrl()],
     assetMediaPlatform: { protocol, webRequest: session.defaultSession.webRequest, webContents },
     ipcMain,
+    onSessionInvalidated: resetAccountScopedRenderer,
   });
   await createMainWindow();
   app.on('activate', () => {
@@ -46,8 +60,21 @@ async function bootstrapElectron(): Promise<void> {
 }
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
+  if (process.platform !== 'darwin' && !resettingRenderer && BrowserWindow.getAllWindows().length === 0) app.quit();
 });
+app.on('before-quit', () => { quitting = true; });
+
+function resetAccountScopedRenderer(): void {
+  const windows = BrowserWindow.getAllWindows();
+  if (quitting || windows.length === 0) return;
+  resettingRenderer = true;
+  try {
+    for (const window of windows) window.destroy();
+    void createMainWindow().catch((error: unknown) => {
+      process.stderr.write(`[nimi-app-session-reset] ${error instanceof Error ? error.message : String(error)}\n`);
+    });
+  } finally { resettingRenderer = false; }
+}
 
 async function createMainWindow(): Promise<BrowserWindow> {
   const window = new BrowserWindow({
@@ -75,7 +102,8 @@ async function createMainWindow(): Promise<BrowserWindow> {
   window.webContents.on('will-navigate', (event, url) => {
     if (!isAllowedElectronRendererUrl(url, [activeRendererUrl()])) event.preventDefault();
   });
-  await window.loadURL(activeRendererUrl());
+  try { await window.loadURL(activeRendererUrl()); }
+  catch (error) { if (!window.isDestroyed()) throw error; }
   return window;
 }
 

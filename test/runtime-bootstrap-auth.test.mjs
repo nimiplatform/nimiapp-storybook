@@ -87,7 +87,7 @@ test('active source contains no app registration, credential custody, self-autho
 test('authenticated Storybook uses the admitted protected text and AIConfig carrier only', () => {
   assert.match(RUNTIME_PLATFORM_SOURCE, /status: 'ready'/);
   assert.match(RUNTIME_PLATFORM_SOURCE, /getStorybookNimiClient\(\)/);
-  assert.match(RUNTIME_AI_SOURCE, /client\.ai\.text\.generateCandidate/);
+  assert.match(RUNTIME_AI_SOURCE, /client\.ai\.scenario\.execute/);
   assert.match(RUNTIME_AI_SOURCE, /loadStorybookAIConfig\(client\.aiConfig\)/);
   assert.doesNotMatch(RUNTIME_AI_SOURCE, /client\.runtime|client\.features|createNimiRuntimeAIModel/);
 });

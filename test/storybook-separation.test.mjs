@@ -106,7 +106,7 @@ test('app shell wires separated Play and Studio surfaces', () => {
 test('AI boundary uses portable App AIConfig intent with no provider/model hardcoding', () => {
   const invokers = read('src/storybook/ai/storybook-runtime-invokers.ts');
   assert.match(invokers, /resolveStorybookTextIntent/);
-  assert.match(invokers, /client\.ai\.text\.generateCandidate/);
+  assert.match(invokers, /client\.ai\.scenario\.execute/);
   assert.doesNotMatch(invokers, /createNimiRuntimeAIModel|createRuntimeClient|modelId:\s*['"]auto['"]/);
   assert.match(invokers, /Image generation is not available through the current App Access contract/);
 
