@@ -14,7 +14,7 @@ createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
     <NimiThemeProvider accentPack="nimi-accent">
       <TooltipProvider>
-        <App />\r
+        <App />
         <NimiToaster />
       </TooltipProvider>
     </NimiThemeProvider>

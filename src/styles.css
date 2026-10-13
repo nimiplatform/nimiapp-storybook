@@ -142,6 +142,10 @@ button:disabled:hover {
   padding: 0 8px;
   color: #304b3a;
 }
+.sb-brand-logo {
+  flex-shrink: 0;
+  object-fit: contain;
+}
 .sb-brand > span {
   font-family: Georgia, serif;
   font-size: 27px;
@@ -755,36 +759,68 @@ button:disabled:hover {
   width: min(810px, calc(100vw - 36px));
 }
 .sb-session-card {
-  border: 1px solid #e0e3d7;
-  padding: 20px;
-  margin-bottom: 22px;
-  border-radius: 7px;
-}
-.sb-session-card > div {
   display: flex;
-  gap: 9px;
-  align-items: center;
+  gap: 14px;
+  align-items: flex-start;
+  border: 1px solid #e0e3d7;
+  background: #fbfbf7;
+  padding: 18px 20px;
+  margin-bottom: 28px;
+  border-radius: 10px;
+}
+.sb-session-card.is-connected {
+  border-color: #d9e3d2;
+  background: #eef3ea;
+}
+.sb-session-card > .sb-connection-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-top: 7px;
+  box-shadow: 0 0 0 4px #a9a99526;
+}
+.sb-session-card > .sb-connection-dot.is-connected {
+  box-shadow: 0 0 0 4px #65896326;
+}
+.sb-session-card__body {
+  min-width: 0;
+}
+.sb-session-card__body strong {
+  display: block;
   font-size: 14px;
+  font-weight: 600;
+  color: #2f3d2c;
 }
-.sb-session-card p {
+.sb-session-card__body p {
   font-size: 12px;
-  line-height: 1.9;
+  line-height: 1.8;
   color: #7c8673;
-  margin: 11px 0;
+  margin: 4px 0 0;
 }
-.sb-session-card details {
-  font-size: 10px;
+.sb-session-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
   margin-top: 14px;
+}
+.sb-session-card__actions details {
+  font-size: 11px;
+  color: #859374;
   overflow-wrap: anywhere;
+}
+.sb-session-card__actions summary {
+  cursor: pointer;
+}
+.sb-session-card__actions details[open] {
+  flex-basis: 100%;
+}
+.sb-session-card__actions details p {
+  font-size: 11px;
 }
 .sb-ai-model-config {
   padding: 0;
   min-width: 0;
-}
-.sb-ai-model-config__posture {
-  font-size: 11px;
-  line-height: 1.8;
-  color: #8b927f;
 }
 .sb-upload {
   position: relative;
@@ -2226,8 +2262,9 @@ button:disabled:hover {
   .sb-brand {
     margin: 0;
   }
-  .sb-brand svg {
+  .sb-brand-logo {
     width: 24px;
+    height: 24px;
   }
   .sb-brand > span {
     display: block;

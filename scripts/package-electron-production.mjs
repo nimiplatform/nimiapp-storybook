@@ -75,6 +75,9 @@ try {
   await realpath(path.join(appRoot, 'dist-electron', 'preload.cjs'));
 
   await mkdir(path.join(productionSourceRoot, 'dist-electron'), { recursive: true });
+  await mkdir(path.join(productionSourceRoot, 'assets'), { recursive: true });
+  await copyFile(path.join(appRoot, 'assets', 'app-icon.png'), path.join(productionSourceRoot, 'assets', 'app-icon.png'));
+  await copyFile(path.join(appRoot, 'assets', 'app-icon.ico'), path.join(productionSourceRoot, 'assets', 'app-icon.ico'));
   await copyFile(path.join(appRoot, 'package.json'), path.join(productionSourceRoot, 'package.json'));
   await copyFile(path.join(appRoot, 'pnpm-lock.yaml'), path.join(productionSourceRoot, 'pnpm-lock.yaml'));
   await cp(path.join(appRoot, 'dist'), path.join(productionSourceRoot, 'dist'), { recursive: true, force: false });
@@ -95,7 +98,7 @@ try {
   await mkdir(path.dirname(nativeDestination), { recursive: true });
   await cp(nativePackageRoot, nativeDestination, { recursive: true, dereference: true, force: false });
   await mkdir(packagerTempRoot, { recursive: true });
-  const macIcon = MACOS_BUILD ? await createMacIcon(path.join(appRoot, 'assets', 'app-icon.png'), stagingRoot) : undefined;
+  const macIcon = MACOS_BUILD ? await createMacIcon(path.join(appRoot, 'assets', 'app-icon-master.png'), stagingRoot) : undefined;
 
   const packagePaths = await packager({
     dir: productionSourceRoot,
@@ -104,19 +107,21 @@ try {
     appBundleId: "ai.nimi.apps.nimi.storybook",
     name: APP_EXECUTABLE_NAME,
     executableName: APP_EXECUTABLE_NAME,
+    icon: MACOS_BUILD ? macIcon : path.join(appRoot, 'assets', 'app-icon.ico'),
     appVersion: RESOURCE_VERSION,
     buildVersion: RESOURCE_VERSION,
     electronVersion: electronPackage.version,
     out: outputRoot,
     tmpdir: packagerTempRoot,
     overwrite: false,
-    asar: false,
+    // asar matches absolute paths with matchBase; a slash-free pattern matches file names,
+    // because '**' does not cross the dot directories of this staging or the App's path.
+    asar: { unpack: '*.{node,dylib,dll}' },
     prune: false,
     quiet: true,
     derefSymlinks: true,
     extraResource: MACOS_BUILD ? [path.join(stagingRoot, 'nimi-native')] : [],
     ...(MACOS_BUILD ? {
-      icon: macIcon,
       extendInfo: { CFBundleIconFile: 'Storybook.icns' },
       // Packager derives these names from the executable after extendInfo.
       // Set presentation metadata after that rewrite, before its signing step.
@@ -134,7 +139,8 @@ try {
       preEmbedProvisioningProfile: false, strictVerify: true,
       optionsForFile: () => ({ entitlements: [], hardenedRuntime: false, timestamp: 'none' }),
     } } : {}),
-    afterInitialize: [async ({ buildPath }) => {
+    // Packager builds the asar before afterInitialize, so stamp the version first.
+    beforeAsar: [async ({ buildPath }) => {
       const packagedManifestPath = path.join(buildPath, 'package.json');
       const packagedManifest = JSON.parse(await readFile(packagedManifestPath, 'utf8'));
       packagedManifest.version = APP_VERSION;
@@ -204,10 +210,9 @@ async function findPackageRoot(entry, expectedName) {
 async function createMacIcon(source, stagingRoot) {
   const iconset = path.join(stagingRoot, 'Storybook.iconset');
   await mkdir(iconset);
-  // Preserve the supplied 512px brand asset; only derive packaging resolutions.
+  // Derive every macOS resolution, including 512@2x, from the original brand asset.
   for (const size of [16, 32, 128, 256, 512]) for (const scale of [1, 2]) {
     const pixels = size * scale;
-    if (pixels > 512) continue;
     await runPackagingTool('/usr/bin/sips', ['--resampleHeightWidth', String(pixels), String(pixels), source, '--out', path.join(iconset, `icon_${size}x${size}${scale === 2 ? '@2x' : ''}.png`)]);
   }
   const output = path.join(stagingRoot, 'Storybook.icns');

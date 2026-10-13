@@ -27,6 +27,7 @@ const IS_PRODUCTION_BUNDLE = typeof __NIMI_ELECTRON_PRODUCTION__ !== 'undefined'
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const appRoot = path.resolve(currentDir, '..');
+const appIconPath = path.join(appRoot, 'assets', process.platform === 'win32' ? 'app-icon.ico' : 'app-icon.png');
 const preloadPath = path.join(currentDir, 'preload.cjs');
 const rendererDistUrl = pathToFileURL(path.join(appRoot, 'dist', 'index.html')).toString();
 const developmentRendererUrl = readDevelopmentRendererUrl();
@@ -46,6 +47,8 @@ void app.whenReady().then(bootstrapElectron).catch((error: unknown) => {
 });
 
 async function bootstrapElectron(): Promise<void> {
+  // The development Electron bundle has its own Dock icon on macOS.
+  app.dock?.setIcon(appIconPath);
   registerNimiElectronAppBridge({
     appId: STORYBOOK_APP_ID,
     allowedRendererUrls: [activeRendererUrl()],
@@ -83,6 +86,7 @@ async function createMainWindow(): Promise<BrowserWindow> {
     minWidth: 390,
     minHeight: 620,
     title: 'Storybook',
+    icon: appIconPath,
     autoHideMenuBar: true,
     webPreferences: {
       preload: preloadPath,

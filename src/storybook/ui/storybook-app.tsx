@@ -22,6 +22,8 @@ import { hasPendingEditorWork } from '../store/editor-session.js';
 import { initializeStorybookStore, isStorybookStoreReady } from '../store/native-repository.js';
 import { createStorybookFileBackend } from '../../shell/infra/storybook-file-storage.js';
 
+const storybookLogo = new URL('../../../assets/app-logo.png', import.meta.url).href;
+
 type Surface = 'play' | 'studio';
 type PlayView =
   | { screen: 'library'; filter: 'all' | 'continue' }
@@ -59,13 +61,13 @@ export function StorybookApp() {
   function library(filter: 'all' | 'continue') {
     navigate(() => { setSettings(false); setSurface('play'); setPlayView({ screen: 'library', filter }); });
   }
-  if (!contentReady || !isStorybookStoreReady()) return <div className="sb-page sb-content-loading"><BookOpen size={30} strokeWidth={1.2} /><p>{contentError || '正在打开你的世界…'}</p>{contentError && <button className="sb-primary" onClick={openContent}>重新打开</button>}</div>;
+  if (!contentReady || !isStorybookStoreReady()) return <div className="sb-page sb-content-loading"><img src={storybookLogo} width={64} height={64} alt="Storybook" /><p>{contentError || '正在打开你的世界…'}</p>{contentError && <button className="sb-primary" onClick={openContent}>重新打开</button>}</div>;
   return (
     <div className={`sb-app${reading ? ' sb-app--reading' : ''}`} data-testid="storybook-app">
       {!reading && (
         <aside className="sb-sidebar">
           <button className="sb-brand" onClick={() => library('all')} aria-label="Storybook 书架">
-            <BookOpen size={27} strokeWidth={1.6} />
+            <img className="sb-brand-logo" src={storybookLogo} width={27} height={27} alt="" />
             <span>
               storybook<span className="sb-brand-dot">.</span>
             </span>
@@ -138,10 +140,7 @@ export function StorybookApp() {
         {settings ? (
           <div className="sb-page sb-settings-page">
             <div className="sb-dialog-heading">
-              <div>
-                <span className="sb-eyebrow">MAKE ROOM FOR IMAGINATION</span>
-                <h2>设置与 AI</h2>
-              </div>
+              <h2>设置与 AI</h2>
               <button
                 className="sb-icon-button"
                 aria-label="关闭设置"

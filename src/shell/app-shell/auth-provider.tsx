@@ -28,28 +28,30 @@ export function SessionSettings() {
     }
   }
   return (
-    <section className="sb-session-card">
-      <div>
-        <span className={`sb-connection-dot${connected ? ' is-connected' : ''}`} />
-        {connected ? '已连接 Nimi' : '连接你的 AI 搭档'}
+    <section className={`sb-session-card${connected ? ' is-connected' : ''}`}>
+      <span className={`sb-connection-dot${connected ? ' is-connected' : ''}`} />
+      <div className="sb-session-card__body">
+        <strong>{connected ? '已连接 Nimi' : '未连接 Nimi'}</strong>
+        <p>
+          {connected
+            ? 'AI 改编、分支编排和角色对话均可使用。'
+            : '从 Nimi Desktop 打开 Storybook 即可使用 AI。已有的故事和草稿仍可在本机阅读与编辑。'}
+        </p>
+        {!connected && (
+          <div className="sb-session-card__actions">
+            <Button tone="secondary" size="sm" loading={retrying} onClick={() => void retry()}>
+              重新检查连接
+            </Button>
+            <details>
+              <summary>技术详情</summary>
+              <p>Storybook 不提供自登录或自授权入口。</p>
+              <code>
+                {error || auth.reasonCode} · {auth.actionHint}
+              </code>
+            </details>
+          </div>
+        )}
       </div>
-      <p>
-        {connected
-          ? '在下方选择叙事模型，就可以改编故事、编排分支，也可以在游玩时与角色交谈。'
-          : '从 Nimi Desktop 打开 Storybook，即可使用 AI 创作与角色对话。已有故事和创作草稿仍可在本机使用。'}
-      </p>
-      <Button tone="secondary" size="sm" loading={retrying} onClick={() => void retry()}>
-        重新检查连接
-      </Button>
-      {!connected && (
-        <details>
-          <summary>连接详情</summary>
-          <p>Storybook 不提供自登录或自授权入口。</p>
-          <code>
-            {error || auth.reasonCode} · {auth.actionHint}
-          </code>
-        </details>
-      )}
     </section>
   );
 }

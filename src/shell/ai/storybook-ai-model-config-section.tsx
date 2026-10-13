@@ -73,14 +73,8 @@ export function StorybookAiModelConfigSection() {
         onOverwrite={overwrite}
         formatError={formatModelConfigError}
         copy={STORYBOOK_MODEL_CONFIG_COPY}
+        language="zh-CN"
         className="sb-ai-model-config__hub"
-        headerSlot={(
-          <p className="sb-ai-model-config__posture">
-            {authenticated
-              ? '配置由 Runtime 保存；Storybook 不持有 provider、model 或凭据。'
-              : '连接到 Desktop 管理的 Nimi 会话后即可读取配置。'}
-          </p>
-        )}
       />
     </section>
   );
