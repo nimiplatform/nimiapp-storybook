@@ -61,7 +61,7 @@ audit output are submitted inputs and pre-submission self-checks only.
 ## Development
 
 ```bash
-pnpm install
+pnpm install --frozen-lockfile
 pnpm dev:shell
 pnpm run test
 pnpm run typecheck
@@ -70,6 +70,18 @@ pnpm run local-audit
 pnpm run pack
 pnpm nimicoding:doctor
 ```
+
+Run the frozen install after checkout or whenever the dependency manifest or
+lockfile changes, including after switching branches. Existing `node_modules`
+can still contain an older SDK/Kit combination. If text generation fails to
+typecheck or `createNimiLocalAppAIConsumptionClient` is missing, first restore
+the locked dependencies before changing the Runtime calls.
+
+On 2026-10-13, the Windows checkout had SDK 0.11.0 and Kit 0.7.0 installed
+despite the lockfile selecting SDK 0.21.0 and Kit 0.19.3. Restoring the locked
+dependencies resolved the interface errors without source changes: all 107
+tests, `pnpm lint`, and `pnpm run build` passed. Live Desktop/Runtime AI
+generation was NOT-VERIFIED during this dependency repair.
 
 `dev:shell` launches the Desktop-supervised Electron shell. The app observes only
 the protected local-app session posture and never owns account login or credentials. Upstream
