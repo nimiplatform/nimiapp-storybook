@@ -10,7 +10,7 @@ All 107 repository tests, production checks, the rebuilt macOS package and both 
 
 In 雨天营业的信件店, the formal AI improvisation control sent the synthetic BLUEBIRD-749 prompt to the configured real text model. 青禾 returned a complete response. A full Home stop/launch and Continue story restored the exact prompt and response; choosing the first authored action advanced to scene 02 with the saved story-line count at one. No fixture supplied the AI response, and the authored story choices remained distinct from AI improvisation.
 
-**NOT-VERIFIED:** Windows GUI installation and AI use; Studio generation and imports; account-switch invalidation. Image generation remains explicitly unavailable in this iteration. The adjacent source Home window-focus failure is recorded in [Overtone's acceptance notes](https://github.com/nimiplatform/nimiapp-overtone/blob/main/README.md); launch, stop, actual AI and saved-data reopening passed.
+**NOT-VERIFIED:** Windows GUI installation and AI use; Studio generation and imports; account-switch invalidation. Image generation remains explicitly unavailable in this iteration. The background Home focus-automation observation and the user's successful manual foreground confirmation are recorded in [Overtone's acceptance notes](https://github.com/nimiplatform/nimiapp-overtone/blob/main/README.md); launch, stop, actual AI and saved-data reopening passed.
 
 AI驱动的互动叙事应用
 
