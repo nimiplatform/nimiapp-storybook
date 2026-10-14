@@ -44,7 +44,7 @@ export function SessionSettings() {
             </Button>
             <details>
               <summary>技术详情</summary>
-              <p>Storybook 不提供自登录或自授权入口。</p>
+              <p>Storybook 不提供独立的登录或授权入口。</p>
               <code>
                 {error || auth.reasonCode} · {auth.actionHint}
               </code>

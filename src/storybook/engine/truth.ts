@@ -263,7 +263,7 @@ export function validateTruthPackage(pkg: StorybookTruthPackage): ValidationRepo
   const needsFoundation = pkg.governance.lifecycle === 'foundation-approved' || pkg.governance.lifecycle === 'play-ready';
   if (needsFoundation) {
     if (!pkg.scenarioFrame) findings.push({ code: 'truth_package_section_incomplete', message: 'Foundation-approved package is missing a scenario frame.', pointers: ['scenarioFrame'] });
-    if (!pkg.sourceCast) findings.push({ code: 'truth_package_section_incomplete', message: 'Foundation-approved package is missing an source cast.', pointers: ['sourceCast'] });
+    if (!pkg.sourceCast) findings.push({ code: 'truth_package_section_incomplete', message: "Foundation-approved package is missing a source cast.", pointers: ['sourceCast'] });
     if (!pkg.bible) {
       findings.push({ code: 'truth_package_section_incomplete', message: 'Foundation-approved package is missing a Storybook Bible.', pointers: ['bible'] });
     } else if (!pkg.bible.approved) {

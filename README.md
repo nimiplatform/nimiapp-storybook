@@ -1,118 +1,76 @@
 # Storybook
 
-## Published dependency and Catalog acceptance (2026-10-13)
+> An agentic interactive narrative engine and creative studio for living, branching stories.
 
-Current public release: [0.1.9](https://github.com/nimiplatform/nimiapp-storybook/releases/tag/v0.1.9); [Registry admission #89](https://github.com/nimiplatform/nimi-app-registry/pull/89) is merged for macOS arm64 and Windows x64. Frozen locks resolve published SDK 0.21.0, Kit/native 0.19.3, App Tools 0.12.1 and nimi-coding 0.6.5 from npm, with no local Nimi archive or source-link overrides.
+Storybook is an interactive fiction platform built for both readers and creators. By combining a cinematic, choice-driven reading environment (**Play**) with a structured authoring workbench (**Studio**), Storybook lets you experience and craft branching narratives where AI-powered characters respond in character to your decisions.
 
-Version 0.1.8 passed its release builds but exited during actual macOS Catalog launch: changing CFBundleName broke Electron's Helper App lookup. Version 0.1.9 keeps that internal name aligned with the executable and sets CFBundleDisplayName for presentation. The earlier immutable release and tag remain intact.
+---
 
-All 107 repository tests, production checks, the rebuilt macOS package and both managed target builds passed. The Registry owner verified exact release hashes, tagged license bytes, build provenance and immutable release posture. Source Nimi Home with its matching protected Runtime (Nimi main 35498102b) completed the real Catalog update from 0.1.8 to 0.1.9 and launched the actual installed package with App Access ready.
+## Two Distinct Surfaces
 
-In 雨天营业的信件店, the formal AI improvisation control sent the synthetic BLUEBIRD-749 prompt to the configured real text model. 青禾 returned a complete response. A full Home stop/launch and Continue story restored the exact prompt and response; choosing the first authored action advanced to scene 02 with the saved story-line count at one. No fixture supplied the AI response, and the authored story choices remained distinct from AI improvisation.
+### 1. Play (游玩体验)
+- **Cinematic Reading**: Immerse yourself in built-in stories (such as *The Rainy Day Letter Shop / 雨天营业的信件店*) or import community story packages.
+- **Effortless Agency**: Contextual choices let you steer the narrative without typing, while optional free-form input lets you question characters and improvise whenever inspiration strikes.
+- **Flexible Narrative Modes**: In authored works, your choices shape scene progression and relationships according to the story's rules. You can also load standalone character cards for open-ended interaction without mandatory chapters or preset choices.
 
-**NOT-VERIFIED:** Windows GUI installation and AI use; Studio generation and imports; account-switch invalidation. Image generation remains explicitly unavailable in this iteration. The background Home focus-automation observation and the user's successful manual foreground confirmation are recorded in [Overtone's acceptance notes](https://github.com/nimiplatform/nimiapp-overtone/blob/main/README.md); launch, stop, actual AI and saved-data reopening passed.
+### 2. Studio (创作者工作台)
+- **From Notes to Living Worlds**: Convert unstructured notes, character cards, or short stories into a cohesive Storybook Bible.
+- **Agent Cast Orchestration**: Assign distinct behavioral constraints, worldviews, and speech habits to each character in your cast.
+- **Branch Topology & Validation**: Inspect scene progression and playtest available branches and lore consistency before exporting.
+- **Import & JSON Packaging**: Export prepared stories as JSON once they pass validation. The import screen accepts Character Card V2 (JSON or PNG), Storybook works (JSON), and Lorebooks (JSON) up to 8 MiB per file (these are story content files, not `.nimiapp` application installers).
 
-AI驱动的互动叙事应用
+---
 
-Profile: `standalone`
+## Technical Architecture & Engine
 
-Storybook is a Nimi App: an agentic interactive narrative product with separated
-`Play`, `Studio`, and a shared app-local `Engine`. It is genre-neutral — not a
-galgame-only, anime-only, adult-only, or one-shot visual-novel generator.
+- **Storybook Engine**: App-owned narrative rule authority that derives scenario frames, active cast dynamics, and scene transcripts from a single canonical story package.
+- **AI Execution**: Uses Nimi Runtime's `ai.scenario.execute` with `text-generate`. Author-defined settings guide generation, though creators should still review outputs since model responses can occasionally contradict source constraints.
+- **Isolated Story Memory**: Run transcripts, player choices, and branch states stay strictly isolated within the project workspace rather than becoming shared LocalAgent memory. AI requests follow your selected Local or Cloud route.
 
-`.nimi/spec/storybook/canonical/**` is the product authority.
-`.nimi/methodology/authority-authoring.yaml` is the nimicoding-managed
-authoring guide; refresh it with `pnpm exec nimicoding sync --apply`.
+---
 
-`nimi.app.yaml`, App Access declarations, pack output, validate output, and local
-audit output are submitted inputs and pre-submission self-checks only.
+## Getting Started & Development
 
-## Surfaces
+### Prerequisites
+- Node.js ≥ 24, pnpm ≥ 10
+- Running Nimi Desktop with an active user account
 
-- **Play** (`src/storybook/ui/play/**`) — ordinary-user surface. Open an official
-  example or a locally imported `prepared-storybook-package`, then start/continue a
-  run. Choices are generated by default so users never have to type; free-text
-  input is optional. Play never exposes Studio authoring controls.
-- **Studio** (`src/storybook/ui/studio/**`) — creator workbench. Convert manual
-  settings, short fiction, document text, structured notes, character cards, or an
-  original scenario into structured Storybook records, review the foundation
-  (scenario frame, agent cast, Storybook Bible, branch topology, asset plan),
-  validate, preview, and prepare a Play package.
-- **Engine** (`src/storybook/engine/**`) — app-owned rule-of-truth authority. The
-  `storybook-truth-package` is canonical; Studio, Play, narrative-context, and
-  render surfaces are derived through projections with governing truth refs.
-
-## Boundaries
-
-- Text execution uses protected synchronous `ai.scenario.execute` with a
-  `text-generate` spec and Runtime-owned App AIConfig. Authored system-message
-  positions and complete terminal output are preserved. Unset generation controls
-  stay unset, while explicit configuration or request controls reach Runtime
-  admission unchanged. No provider/model is hardcoded and there is no App-local
-  provider routing. Storybook image generation remains typed unavailable in this
-  iteration; Storybook never fabricates output.
-- Storybook memory, run state, transcripts, and feedback patches stay app-internal
-  and project-scoped. They never mutate Runtime agent memory, Realm world state, or
-  shared Nimi ecosystem memory.
-- Realm stage one is structural reference only (no mutation, marketplace, or legacy
-  compatibility). Forge and the external narrative-engine are design references, not
-  dependencies or import sources.
-
-## Development
-
+### Running in Development
 ```bash
+# Install dependencies cleanly
 pnpm install --frozen-lockfile
+
+# Launch Desktop-supervised Electron shell
 pnpm dev:shell
+```
+
+### Verification & Testing
+```bash
+# Run unit tests and typechecking
 pnpm run test
 pnpm run typecheck
+
+# Validate story contracts and spec consistency
 pnpm run validate
 pnpm run local-audit
-pnpm run pack
-pnpm nimicoding:doctor
+
+# Package the application (build and package on the matching target host; use windows-x86_64 on Windows)
+pnpm exec nimi-app build --target macos-aarch64
+pnpm run pack --target macos-aarch64 --production
 ```
 
-Run the frozen install after checkout or whenever the dependency manifest or
-lockfile changes, including after switching branches. Existing `node_modules`
-can still contain an older SDK/Kit combination. If text generation fails to
-typecheck or `createNimiLocalAppAIConsumptionClient` is missing, first restore
-the locked dependencies before changing the Runtime calls.
+---
 
-On 2026-10-13, the Windows checkout had SDK 0.11.0 and Kit 0.7.0 installed
-despite the lockfile selecting SDK 0.21.0 and Kit 0.19.3. Restoring the locked
-dependencies resolved the interface errors without source changes: all 107
-tests, `pnpm lint`, and `pnpm run build` passed. Live Desktop/Runtime AI
-generation was NOT-VERIFIED during this dependency repair.
+## Data Privacy & Storage
 
-`dev:shell` launches the Desktop-supervised Electron shell. The app observes only
-the protected local-app session posture and never owns account login or credentials. Upstream
-Platform/Runtime review owns release descriptors, ordinary visibility, install
-truth, and scope authorization; this scaffold does not mint those outcomes.
+- **Local Workspace**: Storybooks, drafts, and saved runs are held in local App storage. Exporting a story is a separate, explicit sharing action.
+- **Cloud Inference Context**: When Cloud inference is selected, the current request sends the relevant story and dialogue context to your selected provider.
 
-Electron applies the Desktop-prepared technical Host profile before loading Kit.
-A real session invalidation destroys the old renderer, retiring its story cache,
-editor state and pending work; the fresh renderer reloads the current account's
-managed App records. Launch and stop/restart acceptance is recorded below.
-Account-switch invalidation is NOT-VERIFIED in this release.
+---
 
-## Release and Governance
+## Release & Verification Status
 
-- `CHANGELOG.md` records product/repo changes.
-- `RELEASE.md` defines the tag/manual release flow and lockstep version bump.
-- `ADMISSION.md` is a listing request runbook, not platform approval.
-
-## macOS and Windows package and release
-
-The declared production targets are macOS arm64 and Windows x86_64, using Desktop-supervised Electron.
-Build and inspect the package from this repository:
-
-```bash
-pnpm run sync
-pnpm exec nimi-app check --production
-pnpm exec nimi-app test
-pnpm exec nimi-app build --target windows-x86_64 --production
-pnpm exec nimi-app pack --target windows-x86_64 --production
-```
-
-Before tagging, follow the [GitHub release setup guide](https://github.com/nimiplatform/nimi/blob/main/app-tools/README.md#publishing-on-github), including the `NIMI_REPOSITORY_ADMIN_TOKEN` Actions secret.
-A protected annotated version tag on the repository default branch runs the managed build, provenance and immutable Release workflow.
-The publisher then submits the immutable Release to [Nimi App Registry](https://github.com/nimiplatform/nimi-app-registry). Registry admission is a separate human review; local builds and GitHub Releases do not create admission or installed state.
+- **Verified Publisher Release**: [v0.1.9](https://github.com/nimiplatform/nimiapp-storybook/releases/tag/v0.1.9)
+- **Registry Admission**: [#89](https://github.com/nimiplatform/nimi-app-registry/pull/89) (macOS arm64 and Windows x64)
+- **Recorded Toolchain Combination**: SDK 0.21.0, Kit/native 0.19.3, App Tools 0.12.1, Nimi Coding 0.6.5
+- **Previously Recorded Platform Checks**: macOS arm64 Catalog install and launch, text generation turn with character 青禾 in *雨天营业的信件店*, save/continue story persistence across restarts, and branching choice progression verified. (Windows GUI execution and Studio creator imports marked as `NOT-VERIFIED`).

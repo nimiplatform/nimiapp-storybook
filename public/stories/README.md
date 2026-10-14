@@ -1,6 +1,6 @@
 # Storybook 场景素材
 
-这三张原创插图使用 Codex 内置 ImageGen 制作，作为 Storybook 编辑编写短篇的预制封面。它们不是应用运行时生成的内容；运行时图像生成仍遵循 Nimi App Access 的能力边界。JPEG 由生成的 PNG 转换，质量 87%，未改变构图。
+本目录包含三张原创预置封面插图，供在 Storybook 中创作与编辑短篇故事时选用。图片由 Codex 内置 ImageGen 生成原始 PNG，在不改动构图的前提下转换为 JPEG（质量 87%）随附打包。这些插图属于静态内置素材，并非应用在运行时动态生成；应用运行时的图像生成仍遵循 Nimi App Access 的能力边界。
 
 ## harbor.jpg
 
