@@ -62,7 +62,7 @@ test('bootstrap consumes only public local-app session posture', () => {
   assert.match(BOOTSTRAP_SOURCE, /getStorybookNimiClient\(\)\.auth\.status\(\)/);
   assert.match(BOOTSTRAP_SOURCE, /session\.sessionBound/);
   assert.match(AUTH_GATE_SOURCE, /Desktop-supervised standard bridge/);
-  assert.match(AUTH_GATE_SOURCE, /不提供自登录或自授权入口/);
+  assert.match(AUTH_GATE_SOURCE, /不提供独立的登录或授权入口/);
   assert.match(RUNTIME_PLATFORM_SOURCE, /desktop-supervised-local-app/);
   assert.equal(existsSync(path.join(APP_ROOT, 'src/shell/infra/storybook-runtime-session.ts')), false);
   assert.equal(existsSync(path.join(APP_ROOT, 'src/shell/features/auth/storybook-auth-adapter.ts')), false);
