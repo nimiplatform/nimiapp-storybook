@@ -12,7 +12,6 @@ local_development:
 metadata:
   summary: 阅读和创作互动故事，让角色、选择与叙事共同推进故事体验。
   icon: assets/app-icon.png
-  readme: APP_GUIDE.md
   release_notes: RELEASE_NOTES.md
   author: Nimi Team
   homepage_url: https://github.com/nimiplatform/nimiapp-storybook

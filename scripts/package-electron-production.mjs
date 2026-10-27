@@ -98,8 +98,8 @@ try {
   await mkdir(path.dirname(nativeDestination), { recursive: true });
   await cp(nativePackageRoot, nativeDestination, { recursive: true, dereference: true, force: false });
   await mkdir(packagerTempRoot, { recursive: true });
-  const macIcon = MACOS_BUILD ? await createMacIcon(path.join(appRoot, 'assets', 'app-icon-master.png'), stagingRoot) : undefined;
 
+  await cp(path.join(appRoot, 'assets', 'native'), path.join(productionSourceRoot, 'assets', 'native'), { recursive: true });
   const packagePaths = await packager({
     dir: productionSourceRoot,
     platform: NATIVE_PLATFORM,
@@ -107,7 +107,7 @@ try {
     appBundleId: "ai.nimi.apps.nimi.storybook",
     name: APP_EXECUTABLE_NAME,
     executableName: APP_EXECUTABLE_NAME,
-    icon: MACOS_BUILD ? macIcon : path.join(appRoot, 'assets', 'app-icon.ico'),
+    icon: path.join(appRoot, 'assets', 'native', MACOS_BUILD ? 'macos.icns' : 'windows.ico'),
     appVersion: RESOURCE_VERSION,
     buildVersion: RESOURCE_VERSION,
     electronVersion: electronPackage.version,
@@ -205,25 +205,4 @@ async function findPackageRoot(entry, expectedName) {
     if (parent === current) throw new Error(`Unable to locate installed package ${expectedName}.`);
     current = parent;
   }
-}
-
-async function createMacIcon(source, stagingRoot) {
-  const iconset = path.join(stagingRoot, 'Storybook.iconset');
-  await mkdir(iconset);
-  // Derive every macOS resolution, including 512@2x, from the original brand asset.
-  for (const size of [16, 32, 128, 256, 512]) for (const scale of [1, 2]) {
-    const pixels = size * scale;
-    await runPackagingTool('/usr/bin/sips', ['--resampleHeightWidth', String(pixels), String(pixels), source, '--out', path.join(iconset, `icon_${size}x${size}${scale === 2 ? '@2x' : ''}.png`)]);
-  }
-  const output = path.join(stagingRoot, 'Storybook.icns');
-  await runPackagingTool('/usr/bin/iconutil', ['--convert', 'icns', iconset, '--output', output]);
-  return output;
-}
-async function runPackagingTool(command, args) {
-  await new Promise((resolve, reject) => {
-    const child = spawn(command, args, { stdio: ['ignore', 'ignore', 'pipe'] });
-    let error = ''; child.stderr.on('data', chunk => { error += String(chunk); });
-    child.once('error', reject);
-    child.once('exit', code => code === 0 ? resolve() : reject(new Error(`App packaging tool failed: ${error || command}`)));
-  });
 }

@@ -27,7 +27,8 @@ const IS_PRODUCTION_BUNDLE = typeof __NIMI_ELECTRON_PRODUCTION__ !== 'undefined'
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const appRoot = path.resolve(currentDir, '..');
-const appIconPath = path.join(appRoot, 'assets', process.platform === 'win32' ? 'app-icon.ico' : 'app-icon.png');
+if (process.platform === 'win32') app.setAppUserModelId(`ai.nimi.${app.isPackaged ? '' : 'dev.'}apps.nimi.storybook`);
+const appIconPath = path.join(appRoot, 'assets', 'native', process.platform === 'win32' ? 'windows.ico' : process.platform === 'darwin' ? 'macos.png' : 'app.png');
 const preloadPath = path.join(currentDir, 'preload.cjs');
 const rendererDistUrl = pathToFileURL(path.join(appRoot, 'dist', 'index.html')).toString();
 const developmentRendererUrl = readDevelopmentRendererUrl();
@@ -48,7 +49,7 @@ void app.whenReady().then(bootstrapElectron).catch((error: unknown) => {
 
 async function bootstrapElectron(): Promise<void> {
   // The development Electron bundle has its own Dock icon on macOS.
-  app.dock?.setIcon(appIconPath);
+  if (process.platform === 'darwin' && !app.isPackaged) app.dock?.setIcon(appIconPath);
   registerNimiElectronAppBridge({
     appId: STORYBOOK_APP_ID,
     allowedRendererUrls: [activeRendererUrl()],
