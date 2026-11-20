@@ -32,7 +32,7 @@ units:
     kind: rule
     title: Local reading without an AI session
     modality: must
-    statement: Valid prepared stories, saved runs and creator drafts remain readable from admitted Nimi native storage or already loaded snapshots when AI execution is unavailable; cold start requires the native content host, missing native storage exposes recovery without browser fallback, and Settings presents the actual session posture.
+    statement: Valid prepared stories, saved runs and creator drafts remain readable from admitted Nimi storage or already loaded snapshots while the same verified identity remains and AI execution or its connection is unavailable. Cold start requires an admitted content connection; missing storage exposes connection recovery without browser persistence fallback. Settings distinguishes identity, connection and AI configuration, and explains that ending identity clears unsaved in-memory work. Identity loss or account change clears private views and caches; old operations cannot publish into a new identity.
     condition: Whenever the Runtime session is absent, checking, or unavailable.
     failure: Preserve local work and expose a recoverable connection action without manufacturing an authenticated session or generated content.
     relations:

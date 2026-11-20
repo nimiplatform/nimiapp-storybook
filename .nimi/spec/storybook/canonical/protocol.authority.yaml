@@ -4,15 +4,15 @@ scope: storybook.protocol
 units:
   - id: definition.storybook.protocol.storage
     kind: definition
-    title: Nimi native application storage
-    meaning: Storybook durable data belongs to the App-scoped native file store mediated by Nimi Kit and the public local-app SDK storage interface; JSON narrative records and independent media files use the chunked asset file API, the repository cache reflects only committed data, transient editor and generation buffers retain pending input or results without reporting them as durable, and Kit-issued media handles are temporary presentation leases.
+    title: Nimi-mediated application storage
+    meaning: Storybook durable data belongs to the App-scoped Runtime file store mediated by Nimi Kit and the public App SDK storage interface; JSON narrative records and independent media files use the chunked asset file API, the repository cache reflects only committed data, transient editor and generation buffers retain pending input or results without reporting them as durable, and native media handles and browser Blob URLs are temporary presentation leases. Connection loss detaches writes while retaining already committed read snapshots for the same verified identity; identity loss clears private repository, editor and generation buffers. Queued writes and delayed results retain their captured identity and connection and never rebind to a later user or Runtime.
   - id: rule.storybook.protocol.r007
     kind: rule
     title: Native persistence and media ownership
     modality: must
-    statement: Persist imported content, creator drafts, project truth, prepared editions, runs and generated results through the Nimi native storage facade, store imported PNG artwork as independent files, await committed writes before reporting saved progress, and materialize stable local media references when exporting a portable work; browser storage and memory-only fallback are not durable product paths, and no app-owned storage root, provider route or credential custody replaces Kit ownership.
-    condition: Whenever Storybook opens, saves, resumes, renders native media, or exports app-owned content.
-    failure: Preserve existing files and pending creator input, report native storage or media unavailability, and do not acknowledge an uncommitted write or switch to browser persistence.
+    statement: Persist imported content, creator drafts, project truth, prepared editions, runs and generated results through the selected Nimi App storage carrier, store imported PNG artwork as independent files, await committed writes before reporting saved progress, and materialize stable local media references when exporting a portable work; browser storage and memory-only fallback are not durable product paths, and no app-owned storage root, provider route or credential custody replaces Kit ownership.
+    condition: Whenever Storybook opens, saves, resumes, renders stored media, or exports app-owned content.
+    failure: Preserve existing files and pending creator input, report storage or media unavailability, and do not acknowledge an uncommitted write or switch to browser persistence.
     relations:
       - type: applies_to
         target: definition.storybook.product.truth-package

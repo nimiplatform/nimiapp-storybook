@@ -6,13 +6,17 @@ import { pathToFileURL } from 'node:url';
 import { build } from 'esbuild';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { NimiAppSessionProvider } from '@nimiplatform/kit/auth/app';
 
 const root = path.resolve(import.meta.dirname, '..');
 mkdirSync(path.join(root, '.nimi/local'), { recursive: true });
 const out = mkdtempSync(path.join(root, '.nimi/local/markdown-tests-'));
 await build({ entryPoints: [path.join(root, 'src/storybook/ui/protocol/prose.tsx')], outfile: path.join(out, 'prose.mjs'), bundle: true, platform: 'node', format: 'esm', packages: 'external', jsx: 'automatic', logLevel: 'silent' });
 const { Prose } = await import(pathToFileURL(path.join(out, 'prose.mjs')).href);
-const render = text => renderToStaticMarkup(createElement(Prose, { text }));
+// Static formatting only: no identity or Runtime success is supplied.
+const snapshot = { identity: { status: 'signed-out' }, runtime: { status: 'disconnected' } };
+const session = { getSnapshot: () => snapshot, subscribe: () => () => {} };
+const render = text => renderToStaticMarkup(createElement(NimiAppSessionProvider, { session }, createElement(Prose, { text })));
 test.after(() => rmSync(out, { recursive: true, force: true }));
 
 test('shared prose renders inline and reference images with nested Markdown while code remains literal', () => {

@@ -1,6 +1,19 @@
-Current development dependencies are SDK 0.22.2, Kit/native 0.22.1, App Tools 0.14.0 and Nimi Coding 0.7.0. The checked-in pnpm lock resolves these packages from the public registry. Run `pnpm install --frozen-lockfile`, `pnpm exec nimi-app check`, then `pnpm dev` with a matching source-built Nimi Runtime and Home. App versions and published App releases are unchanged. Earlier versioned notes retain their original acceptance scope. Home uses the App-owned root `NIMI_APP.md`; this README remains developer documentation.
+## Current platform baseline (0.1.10)
 
-Upgrade verification: public-registry installation, frozen-lockfile installation, App Tools checks and the applicable type/Host build checks passed. Desktop-supervised macOS development opened the story shelf and retained collections. New model-output journeys and packaged installation were not rerun; earlier evidence below retains its stated versions and scope.
+Storybook (`nimi.storybook`, public slug `storybook`) consumes published npm packages without local tarball overrides:
+- `@nimiplatform/app-tools` `^0.16.0-rc.10`
+- `@nimiplatform/sdk` `^0.24.0-rc.10`
+- `@nimiplatform/kit` `^0.24.0-rc.16` (with matching optional native binding)
+- `@nimiplatform/nimi-coding` `0.7.0`, `electron` `^45.4.1`, `vite` `^8.3.8`
+
+### Local development & hosted Web release
+
+- Install: `pnpm install --frozen-lockfile`
+- Desktop (supervised by Nimi Home): `pnpm dev -- --list-registrations`, then `pnpm dev -- --resume <selector>`.
+- Web (local Realm): copy `.env.web.example` to `.env.web.local`, configure browser-trusted TLS files, and run `pnpm dev:web -- --realm local` (`https://127.0.0.1:4473`, client `nimi.storybook.web.dev`, local Realm `http://127.0.0.1:3002`). Local development origins require their own environment admission.
+- Hosted Web release candidate: set `NIMI_WEB_VERSION=<X.Y.Z>` and `NIMI_WEB_ARCHIVE=<path.zip>`, then run `pnpm run build:web:release` (`https://storybook.nimi.xyz`, client `nimi.storybook.web`, callback `https://storybook.nimi.xyz/`). Protected `web-v*` tags trigger `.github/workflows/nimi-web-release.yml` to publish immutable Web bundles for Registry admission.
+
+Desktop and Web use installed Kit session factories and the same Studio/Play renderer. Runtime owns identity-scoped storage and AIConfig. Same-identity disconnect retains already opened content and unsaved editor buffers; writes require an explicit valid connection. Identity loss clears private in-memory state. Queued saves and asynchronous imports/generation are scoped to the connection that started them; reconnect does not replay business operations.
 
 [App introduction and usage](NIMI_APP.md)
 
@@ -69,7 +82,7 @@ pnpm run pack --target macos-aarch64 --production
 
 ## Data Privacy & Storage
 
-- **Local Workspace**: Storybooks, drafts, and saved runs are held in local App storage. Exporting a story is a separate, explicit sharing action.
+- **Local Workspace**: Storybooks, drafts, and saved runs are held in the current user’s Runtime App storage. Exporting a story is a separate, explicit sharing action.
 - **Cloud Inference Context**: When Cloud inference is selected, the current request sends the relevant story and dialogue context to your selected provider.
 
 ---

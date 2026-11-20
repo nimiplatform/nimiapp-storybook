@@ -112,7 +112,7 @@ export function StudioIntake({
           <div className="sb-writing-footer">
             <span>
               <FileText size={13} />
-              {editor.status === 'saving' ? '正在保存草稿…' : editor.status === 'error' ? '草稿尚未保存' : getIntakeDraft() ? '草稿已保存在本机' : '输入后自动保存到本机'}
+              {editor.status === 'saving' ? '正在保存草稿…' : editor.status === 'error' ? '草稿尚未保存' : getIntakeDraft() ? '草稿已保存在主 Runtime' : '输入后自动保存到主 Runtime'}
             </span>
             <span>{draft.text.length.toLocaleString()} / 8,000 字</span>
           </div>

@@ -1,3 +1,4 @@
+import { captureStorybookWriteScope } from '../../store/native-repository.js';
 import { useEffect, useRef, useState } from 'react';
 import {
   ArrowLeft,
@@ -78,7 +79,7 @@ export function PlayRun({
       <div className="sb-page sb-empty">
         <BookOpen size={30} />
         <h2>这本故事暂时无法打开。</h2>
-        <p>进度仍保存在本机，请重新导入完整故事文件。</p>
+        <p>进度仍保存在主 Runtime，请重新导入完整故事文件。</p>
         <button className="sb-primary" onClick={onExit}>
           返回书架
         </button>
@@ -156,6 +157,7 @@ export function PlayRun({
     setBusy(true);
     setNotice(null);
     try {
+      const assertCurrent = captureStorybookWriteScope(); assertCurrent();
       const now = new Date().toISOString();
       const inputRecord = {
         ...record!,
@@ -168,6 +170,7 @@ export function PlayRun({
         }),
       };
       await persist(inputRecord);
+      assertCurrent();
       setFreeText('');
       const turnRef = mintId('turn');
       const context = buildPlayNarrativeContext({
@@ -196,6 +199,7 @@ export function PlayRun({
             packageVersion: prepared!.truthPackageVersion,
           }),
         generate: async () => {
+          assertCurrent();
           const ai = await runSceneText({
             projectId: record!.run.projectId,
             contextLines: [
@@ -212,6 +216,7 @@ export function PlayRun({
             ],
             instruction: `以当前场景中被问到的角色回应玩家，80至150字，只写对白，可标注说话人。保持角色鲜明的语气与意图，记住刚才的谈话与玩家选择。不要写动作、环境变化、内心旁白或未来事件；这些会改变已有选择的前置条件。禁止把文风意象当成事实，禁止补充未知的设备运转、角色记忆或世界规则。疑问可以回应为疑问，承诺只能是角色的信念。不要替玩家选路线，不提系统、模型或规则。`,
           });
+          assertCurrent();
           const current = getRun(runId) ?? inputRecord;
           await saveRun({ ...current, generationRuns: [...(current.generationRuns ?? []), ai.run] });
           if (ai.ok)
@@ -227,6 +232,7 @@ export function PlayRun({
         },
         provenance: { surface: 'play.free-text' },
       });
+      assertCurrent();
       const latest = getRun(runId) ?? inputRecord;
       if (outcome.status === 'REJECTED' || !outcome.record.coreOutput) {
         await persist({ ...latest, narrative: outcome.envelope });

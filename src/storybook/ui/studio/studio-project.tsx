@@ -1,3 +1,5 @@
+import { captureStorybookWriteScope } from '../../store/native-repository.js';
+import { deliverStorybookJson } from '../../../shell/infra/storybook-file-delivery.js';
 import { useEffect, useRef, useState } from 'react';
 import {
   ArrowLeft,
@@ -101,7 +103,9 @@ export function StudioProject({
   async function approveAndGenerate() { try { await approveProjectAndGenerate(projectId); setTab('playtest'); } catch (e) { setNotice(e instanceof Error ? e.message : '设定未能确认。'); } }
   async function prepare(): Promise<ImportedPackageRecord> {
     if (editor.session.getSnapshot().operation) throw new Error('请等当前修订完成后再导出。');
+    const assertCurrent = captureStorybookWriteScope();
     await editor.session.flush();
+    assertCurrent();
     const record = editor.session.getSnapshot().value;
     if (!record) throw new Error('找不到故事。');
     const built = buildPreparedPackage({
@@ -128,7 +132,9 @@ export function StudioProject({
   async function publish() {
     if (editor.session.getSnapshot().operation) return;
     try {
+      const assertCurrent = captureStorybookWriteScope();
       const book = await prepare();
+      assertCurrent();
       onPlay(await beginStory(book));
     } catch (e) {
       setNotice(e instanceof Error ? e.message : '故事未能放上书架。');
@@ -136,15 +142,10 @@ export function StudioProject({
   }
   async function exportStory() {
     try {
+      const assertCurrent = captureStorybookWriteScope();
       const book = await prepare();
-      const url = URL.createObjectURL(
-        new Blob([JSON.stringify(book.package, null, 2)], { type: 'application/json' }),
-      );
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${record!.project.name.replace(/[\\/:*?"<>|]/g, '-')}.storybook.json`;
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      assertCurrent();
+      await deliverStorybookJson(book.package, `${record!.project.name}.storybook.json`, assertCurrent);
     } catch (e) {
       setNotice(e instanceof Error ? e.message : '导出失败。');
     }
@@ -176,7 +177,7 @@ export function StudioProject({
           {busy ? 'IMAGINATION AT WORK' : 'YOUR STORY IS TAKING SHAPE'}
         </span>
       </header>
-      <p className="sb-muted" role="status">{editor.status === 'saving' ? '正在保存修改…' : editor.status === 'error' ? '修改仍在当前页面，尚未保存到本机。' : '修改已保存在本机'}</p>
+      <p className="sb-muted" role="status">{editor.status === 'saving' ? '正在保存修改…' : editor.status === 'error' ? '修改仍在当前页面，尚未保存到主 Runtime。' : '修改已保存在主 Runtime'}</p>
       {editor.status === 'error' && <div className="sb-notice" role="alert"><p>{editor.error}</p><button className="sb-quiet-button" onClick={() => { void editor.session.flush().catch(() => undefined); }}>重试保存</button></div>}
       <div className="sb-page-heading">
         <div>

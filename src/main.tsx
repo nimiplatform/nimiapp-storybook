@@ -1,22 +1,5 @@
-import React from 'react';
-import { createRoot } from 'react-dom/client';
-import { NimiThemeProvider, NimiToaster, TooltipProvider } from '@nimiplatform/kit/ui';
-import { installNimiShellRuntimeBridge } from '@nimiplatform/kit/shell/renderer/bridge';
-import './styles.css';
-import './shell/auth/auth-i18n.js';
-import { App } from './shell/App.js';
-
-// Platform bootstrap (Kit-owned): install the Desktop-supervised standard
-// bridge before the local-app client reads its public session posture.
-installNimiShellRuntimeBridge();
-
-createRoot(document.getElementById('root') as HTMLElement).render(
-  <React.StrictMode>
-    <NimiThemeProvider accentPack="nimi-accent">
-      <TooltipProvider>
-        <App />
-        <NimiToaster />
-      </TooltipProvider>
-    </NimiThemeProvider>
-  </React.StrictMode>,
-);
+import { createDesktopNimiAppSession } from '@nimiplatform/kit/auth/app/desktop';
+import { mountStorybook } from './shell/mount-storybook.js';
+import { downloadStorybookFile } from './shell/infra/storybook-file-delivery.js';
+const dispose = mountStorybook(createDesktopNimiAppSession(), downloadStorybookFile);
+if (import.meta.hot) import.meta.hot.dispose(dispose);

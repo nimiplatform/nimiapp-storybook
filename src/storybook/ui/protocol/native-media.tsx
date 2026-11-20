@@ -1,9 +1,14 @@
+import { useNimiAppSession } from '@nimiplatform/kit/auth/app';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { nativeMediaPath, openStorybookMedia } from '../../../shell/infra/storybook-media-storage.js';
 import { safeMediaUri } from '../../engine/protocol/validate.js';
 
 // @nimi-authority: rule.storybook.protocol.r007
 export function useMediaUrl(uri?: string): { url?: string; error?: string; reload: () => void; native: boolean } {
+  const { snapshot } = useNimiAppSession();
+  const lastConnection = useRef<string | undefined>(undefined);
+  if (snapshot.runtime.status === 'connected') lastConnection.current = snapshot.runtime.scope.viewKey;
+  const connectionKey = lastConnection.current;
   const [revision, setRevision] = useState(0);
   const reload = useCallback(() => setRevision(value => value + 1), []);
   const [resolved, setResolved] = useState<{ uri?: string; revision?: number; url?: string; error?: string }>({});
@@ -13,9 +18,9 @@ export function useMediaUrl(uri?: string): { url?: string; error?: string; reloa
     void openStorybookMedia(uri).then(value => {
       if (cancelled) { void value.revoke().catch(() => undefined); return; }
       handle = value; setResolved({ uri, revision, url: value.url });
-    }).catch(() => { if (!cancelled) setResolved({ uri, revision, error: '本机媒体暂时无法打开。' }); });
+    }).catch(() => { if (!cancelled) setResolved({ uri, revision, error: '内容库媒体暂时无法打开。' }); });
     return () => { cancelled = true; if (handle) void handle.revoke().catch(() => undefined); };
-  }, [uri, revision]);
+  }, [uri, revision, connectionKey]);
   const native = Boolean(uri && nativeMediaPath(uri));
   const media = !uri ? {} : native ? resolved.uri === uri && resolved.revision === revision ? resolved : {} : safeMediaUri(uri) ? { url: safeMediaUri(uri) } : { error: '媒体地址暂不支持。' };
   return { ...media, reload, native };

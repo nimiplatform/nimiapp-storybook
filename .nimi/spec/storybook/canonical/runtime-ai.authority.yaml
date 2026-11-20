@@ -4,8 +4,8 @@ scope: storybook.runtime-ai
 units:
   - id: definition.storybook.runtime-ai.runtime-session
     kind: definition
-    title: Desktop-supervised Runtime session
-    meaning: A Storybook Runtime session is a Desktop-supervised local-app session exposed through the protected standard bridge; Desktop and the protected carrier own admission, authorization, and credentials, while Storybook observes only public session posture and caller-scoped handles.
+    title: Nimi-mediated Runtime session
+    meaning: A Storybook Runtime session uses the Nimi SDK and Kit through the protected Desktop-supervised carrier or an admitted direct remote App carrier. Nimi owns identity, admission and credentials; Storybook observes the verified identity and current consumption scope without creating another account system. A technical connection is separate from identity and does not itself establish model readiness.
   - id: definition.storybook.runtime-ai.ai-config
     kind: definition
     title: Runtime-owned App AIConfig
@@ -42,9 +42,9 @@ units:
     kind: rule
     title: Runtime account boundary
     modality: must
-    statement: Storybook establishes or resumes Runtime access only through the Desktop-supervised standard bridge and does not perform App-side Runtime registration, credential custody, self-authorization, or Runtime account browser brokering.
+    statement: Storybook establishes or resumes Runtime access through the standard Kit Desktop or Web factory and the corresponding public SDK carrier. Native Desktop remains Home-managed; Web uses the official Nimi login and separately admitted source with first Home confirmation. Storybook performs no private registration, credential custody, self-authorization or first-party account brokering.
     condition: Whenever Storybook establishes or resumes an authenticated Runtime session.
-    failure: Reject the session attempt when the protected bridge is unavailable or any App-side registration, credential, self-authorization, or account broker path is invoked; establish no App-owned authenticated session.
+    failure: Report the unavailable selected carrier or missing source/identity/connection without simulating a native bridge, granting permissions or replaying business requests.
     relations:
       - type: applies_to
         target: definition.storybook.runtime-ai.runtime-session
@@ -60,7 +60,7 @@ units:
     kind: rule
     title: No OAuth exchange surface
     modality: must_not
-    statement: An app bridge exposes OAuth or token exchange, or an app-owned token exchange or local first-party auth shim authenticates Storybook.
+    statement: Storybook implements its own OAuth/token exchange or exposes first-party credential methods through an app bridge; remote identity instead uses the platform-owned SDK/Kit scoped App flow.
     condition: Whenever a Storybook authentication or app bridge surface is defined or invoked.
     failure: Reject the exchange surface or auth shim and establish no app-owned authenticated session.
     relations:

@@ -51,7 +51,7 @@ export default defineConfig({
   server: {
     watch: {
       // Local verification and Electron packaging must not reload an active AI conversation.
-      ignored: ['**/.nimi/**', '**/.playwright-cli/**', '**/dist-electron/**', '**/dist-electron-package/**'],
+      ignored: ['**/.nimi/**', '**/.playwright-cli/**', '**/dist-electron/**', '**/dist-electron-package/**', '**/dist-web/**'],
     },
   },
   resolve: {
@@ -62,6 +62,7 @@ export default defineConfig({
     dedupe: ['react', 'react-dom', 'react/jsx-runtime'],
   },
   optimizeDeps: {
+    entries: ['index.html'],
     exclude: [
       '@nimiplatform/kit',
       '@nimiplatform/kit/ui',

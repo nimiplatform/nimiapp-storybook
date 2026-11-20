@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNimiAppSession } from '@nimiplatform/kit/auth/app';
 import './protocol/protocol.css';
 import { BookOpen, Compass, Feather, Footprints, Settings2, X, ArrowUpRight } from 'lucide-react';
 import { StorybookAiModelConfigSection } from '../../shell/ai/storybook-ai-model-config-section.js';
@@ -40,8 +41,19 @@ type StudioView =
 export function StorybookApp() {
   const [contentReady, setContentReady] = useState(false);
   const [contentError, setContentError] = useState('');
-  function openContent() { setContentError(''); void initializeStorybookStore(createStorybookFileBackend()).then(() => setContentReady(true)).catch(() => setContentError('请通过 Nimi 打开 Storybook，以访问 App 的本机内容库。若已在 App 中，请恢复 Nimi 连接后重试。')); }
-  useEffect(() => { openContent(); }, []);
+  const { snapshot } = useNimiAppSession();
+  const scope = snapshot.runtime.status === 'connected' ? snapshot.runtime.scope : undefined;
+  const storage = useMemo(() => scope ? createStorybookFileBackend() : undefined, [scope]);
+  const openContent = useCallback(() => {
+    if (!storage || !scope) return;
+    setContentError('');
+    void initializeStorybookStore(storage).then(() => {
+      if (!scope.signal.aborted) setContentReady(true);
+    }).catch(error => {
+      if (!scope.signal.aborted) setContentError(error instanceof Error ? error.message : '未能打开内容库。');
+    });
+  }, [storage, scope]);
+  useEffect(openContent, [openContent]);
   useEffect(() => {
     const preserveResult = (event: BeforeUnloadEvent) => { if (hasPendingExperienceWork() || hasPendingEditorWork()) event.preventDefault(); };
     window.addEventListener('beforeunload', preserveResult);
@@ -61,7 +73,7 @@ export function StorybookApp() {
   function library(filter: 'all' | 'continue') {
     navigate(() => { setSettings(false); setSurface('play'); setPlayView({ screen: 'library', filter }); });
   }
-  if (!contentReady || !isStorybookStoreReady()) return <div className="sb-page sb-content-loading"><img src={storybookLogo} width={64} height={64} alt="Storybook" /><p>{contentError || '正在打开你的世界…'}</p>{contentError && <button className="sb-primary" onClick={openContent}>重新打开</button>}</div>;
+  if (!contentReady || !isStorybookStoreReady()) return <div className="sb-page sb-content-loading"><img src={storybookLogo} width={64} height={64} alt="Storybook" /><p>{contentError || (scope ? '正在打开你的世界…' : '连接 Nimi 后打开你的故事库。')}</p>{contentError && scope && <button className="sb-primary" onClick={openContent}>重新打开</button>}<SessionSettings /></div>;
   return (
     <div className={`sb-app${reading ? ' sb-app--reading' : ''}`} data-testid="storybook-app">
       {!reading && (
@@ -129,7 +141,7 @@ export function StorybookApp() {
             </button>
             <span className="sb-connection">
               <i className={connected ? 'is-connected' : ''} />
-              {connected ? 'Nimi 已连接' : '本地阅读'}
+              {connected ? 'Nimi 已连接' : '未连接 · 可阅读已打开内容'}
               <span>PRE-ALPHA</span>
             </span>
           </div>

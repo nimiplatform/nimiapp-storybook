@@ -7,20 +7,22 @@ import {
 } from '@nimiplatform/kit/features/model-config';
 import { STORYBOOK_APP_ID } from '../../contracts/app-identity.ts';
 import { requireStorybookAIConfigOwner } from '../../storybook/ai/storybook-ai-config-store.ts';
-import { getStorybookNimiClient } from '../infra/storybook-nimi-client.ts';
-import { useAppStore } from '../app-shell/app-store.js';
+import { useNimiAppSession, type NimiAppScope } from '@nimiplatform/kit/auth/app';
 import { STORYBOOK_MODEL_CONFIG_COPY } from './model-config-copy.ts';
 import { STORYBOOK_TEXT_GENERATE_CAPABILITY_ID } from './storybook-ai-requirements.ts';
 
 export function StorybookAiModelConfigSection() {
-  const bootstrapReady = useAppStore((state) => state.bootstrapReady);
-  const authenticated = useAppStore((state) => state.auth.status === 'authenticated');
+  const { snapshot } = useNimiAppSession();
+  const scope = snapshot.runtime.status === 'connected' ? snapshot.runtime.scope : undefined;
+  return <Config key={scope?.viewKey ?? 'disconnected'} scope={scope} />;
+}
+function Config({ scope }: { scope?: NimiAppScope }) {
   const [snapshot, setSnapshot] = useState<NimiAIConfigSnapshot | undefined>(undefined);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
-    if (!bootstrapReady || !authenticated) {
+    if (!scope) {
       setSnapshot(undefined);
       setLoadError(null);
       return;
@@ -28,28 +30,33 @@ export function StorybookAiModelConfigSection() {
     setLoading(true);
     setLoadError(null);
     try {
-      const next = await getStorybookNimiClient().aiConfig.get();
+      const next = await scope.client.aiConfig.get();
+      if (scope.signal.aborted) return;
       if (next.config) requireStorybookAIConfigOwner(next.config);
       setSnapshot(next);
     } catch (error) {
+      if (scope.signal.aborted) return;
       setSnapshot(undefined);
       setLoadError(error instanceof Error ? error.message : String(error || 'AIConfig read failed.'));
     } finally {
-      setLoading(false);
+      if (!scope.signal.aborted) setLoading(false);
     }
-  }, [authenticated, bootstrapReady]);
+  }, [scope]);
 
   useEffect(() => {
     void refresh();
   }, [refresh]);
 
   const overwrite = useCallback<ModelConfigOverwrite>(async (input) => {
-    const result = await getStorybookNimiClient().aiConfig.overwrite(input);
+    if (!scope) throw new Error('请先连接 Nimi。');
+    scope.signal.throwIfAborted();
+    const result = await scope.client.aiConfig.overwrite(input);
+    scope.signal.throwIfAborted();
     if (result.config) requireStorybookAIConfigOwner(result.config);
     setSnapshot({ config: result.config, revision: result.revision, effectiveSelections: [] });
     void refresh();
     return result;
-  }, [refresh]);
+  }, [refresh, scope]);
 
   const context = useMemo(() => ({
     owner: 'app-ai-config' as const,
@@ -65,9 +72,9 @@ export function StorybookAiModelConfigSection() {
         capabilities={snapshot ? snapshot.config?.capabilities ?? null : undefined}
         revision={snapshot?.revision}
         effectiveSelections={snapshot?.effectiveSelections}
-        listOptions={(query) => getStorybookNimiClient().aiConfig.listOptions(query)}
+        listOptions={(query) => scope ? scope.client.aiConfig.listOptions(query) : Promise.reject(new Error('请先连接 Nimi。'))}
         loading={loading}
-        disabled={!bootstrapReady || !authenticated}
+        disabled={!scope}
         loadError={loadError}
         onRetry={() => void refresh()}
         onOverwrite={overwrite}

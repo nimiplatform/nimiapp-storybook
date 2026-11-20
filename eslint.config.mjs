@@ -8,6 +8,7 @@ export default defineConfig([
   ...tseslint.configs.recommended,
   globalIgnores([
     'dist/**',
+    'dist-web/**',
     'dist-electron/**',
     'dist-electron-package/**',
     'src-tauri/target/**',

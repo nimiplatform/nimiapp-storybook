@@ -28,7 +28,7 @@ html,
 body,
 #root {
   margin: 0;
-  min-width: 360px;
+  min-width: 320px;
   height: 100%;
 }
 body {
@@ -2569,16 +2569,60 @@ button:disabled:hover {
 
 @media (max-width: 580px) {
   .sb-sidebar {
-    gap: 11px;
+    gap: 8px 12px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+    padding: 10px 16px;
+  }
+  .sb-nav {
+    order: 3;
+    width: 100%;
+    margin-left: 0;
+  }
+  .sb-nav > button,
+  .sb-nav > button:nth-child(2) {
+    flex: 1;
+    min-height: 44px;
+    font-size: 13px;
+    padding: 10px 8px;
+    white-space: nowrap;
   }
   .sb-nav > button:nth-child(2) {
     display: flex;
-    font-size: 0;
-    padding: 9px 6px;
   }
   .sb-nav > button:nth-child(2) > svg {
-    display: block;
-    width: 16px;
+    display: none;
+  }
+  .sb-sidebar-bottom {
+    margin-left: auto;
+  }
+  .sb-settings-link {
+    min-height: 44px;
+    padding: 8px;
+    gap: 6px;
+    font-size: 12px;
+  }
+  .sb-page-heading p,
+  .sb-featured-copy p,
+  .sb-book-footer,
+  .sb-book-themes {
+    font-size: 13px;
+  }
+  .sb-filter-row button,
+  .sb-primary,
+  .sb-secondary,
+  .sb-icon-button {
+    min-height: 44px;
+    font-size: 13px;
+  }
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+  /* Keep signed-out gate actions touch-friendly on narrow viewports. */
+  #root button {
+    min-height: 44px;
   }
   .sb-brand > span {
     font-size: 18px;

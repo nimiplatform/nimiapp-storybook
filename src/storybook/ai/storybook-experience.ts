@@ -1,3 +1,4 @@
+import { captureStorybookIdentity, captureStorybookWriteScope } from '../store/native-repository.js';
 import { getRuntimePlatformProjection } from '../../shell/auth/runtime-platform.js';
 import { getExperienceRun, saveExperienceRun } from '../store/storybook-store.js';
 import { mintId } from '../engine/ids.js';
@@ -12,9 +13,10 @@ import { invokeStorybookText } from './storybook-runtime-invokers.js';
 import { dialogueEditor } from '../store/content-editors.js';
 import { forkExperience } from '../engine/protocol/session.js';
 
-const pending = new Map<string, Promise<ExperienceRun>>();
+let pending = new Map<string, Promise<ExperienceRun>>();
 // Actual finished output awaiting durable commit; never reported as saved progress.
-const uncommitted = new Map<string, ExperienceRun>();
+let uncommitted = new Map<string, ExperienceRun>();
+export function resetStorybookExperiences() { pending = new Map(); uncommitted = new Map(); }
 export const experienceBusy = (id: string): boolean => pending.has(id);
 export const hasUncommittedExperience = (): boolean => uncommitted.size > 0;
 export const hasPendingExperienceWork = (): boolean => pending.size > 0 || uncommitted.size > 0;
@@ -26,9 +28,10 @@ export async function recoverExperience(run: ExperienceRun): Promise<ExperienceR
   if (pending.has(run.id)) return run;
   if (!uncommitted.has(run.id) && !run.attempts.some(a => a.status === 'running')) return run;
   return perform(run.id, async () => {
+    const completed = uncommitted;
     const current = getExperienceRun(run.id)!;
     const recovered = uncommitted.get(run.id) ?? { ...current, attempts: current.attempts.map(a => a.status === 'running' ? { ...a, status: 'unavailable' as const, reason: 'interrupted', message: '上次生成被中断，可重试。', completedAt: now() } : a) };
-    await saveExperienceRun(recovered); uncommitted.delete(run.id); return recovered;
+    await saveExperienceRun(recovered); completed.delete(run.id); return recovered;
   });
 }
 
@@ -61,13 +64,19 @@ export function runExperienceGeneration(runId: string, input: { message: string 
 function perform(runId: string, action: () => Promise<ExperienceRun>): Promise<ExperienceRun> {
   const existing = pending.get(runId);
   if (existing) return Promise.reject(new Error('上一项操作尚未完成，这次输入尚未发送，请稍后重试。'));
-  const job = Promise.resolve().then(action).finally(() => { pending.delete(runId); activityChanged(); });
+  const assertIdentity = captureStorybookIdentity();
+  const tasks = pending;
+  const job = Promise.resolve().then(() => { assertIdentity(); return action(); }).finally(() => { tasks.delete(runId); activityChanged(); });
   pending.set(runId, job);
   activityChanged();
   return job;
 }
 
 async function execute(runId: string, input: { message: string } | { taskId: string } | { retryDialogue: true }): Promise<ExperienceRun> {
+  const assertIdentity = captureStorybookIdentity();
+  const assertConnection = captureStorybookWriteScope();
+  const completed = uncommitted;
+  assertConnection();
   let run = getExperienceRun(runId);
   if (!run) throw new Error('找不到这段经历。');
   if (run.attempts.some(a => a.status === 'running')) throw new Error('请等待当前生成完成。');
@@ -87,6 +96,7 @@ async function execute(runId: string, input: { message: string } | { taskId: str
   };
   run = { ...run, attempts: [...run.attempts, attempt], updatedAt: now() };
   await saveExperienceRun(run);
+  assertIdentity(); assertConnection();
   if ('message' in input) {
     const draft = dialogueEditor(runId);
     if (draft.getSnapshot().value === input.message) await draft.update(() => '').catch(() => undefined);
@@ -94,10 +104,10 @@ async function execute(runId: string, input: { message: string } | { taskId: str
   const finish = async (patch: Partial<GenerationAttempt>, text?: string) => {
     let next: ExperienceRun = { ...run!, attempts: run!.attempts.map(a => a.id === attempt.id ? { ...a, ...patch, completedAt: now() } : a), updatedAt: now() };
     if (text !== undefined && !task) next = addCharacterMessage(next, text, now(), attempt.id);
-    uncommitted.set(runId, next);
-    try { await saveExperienceRun(next); }
-    catch (error) { throw new Error('这次结果尚未保存到本机，内容暂留在当前 App 中。请重试保存后再继续。', { cause: error }); }
-    uncommitted.delete(runId);
+    assertIdentity(); completed.set(runId, next);
+    try { assertConnection(); await saveExperienceRun(next); }
+    catch (error) { throw new Error('这次结果尚未保存到主 Runtime，内容暂留在当前 App 中。请重试保存后再继续。', { cause: error }); }
+    completed.delete(runId);
     return next;
   };
   try {
@@ -111,7 +121,9 @@ async function execute(runId: string, input: { message: string } | { taskId: str
       if (unsupported) return finish({ status: 'unavailable', reason: 'capability-unavailable', message: unsupported });
     }
     const context = buildExperienceContext(run, task?.inputs);
+    assertIdentity(); assertConnection();
     const projection = await getRuntimePlatformProjection();
+    assertIdentity(); assertConnection();
     if (projection.status !== 'ready') return finish({ status: 'unavailable', reason: 'runtime-not-ready', message: '连接 Nimi 后即可继续。你的输入已保存。', context: context.trace });
     const result = await invokeStorybookText(projection.client, { messages: context.messages, surfaceId: 'nimi.storybook.play.experience' });
     if (!result.ok) return finish({ status: 'unavailable', reason: result.reason, message: result.message, context: context.trace });

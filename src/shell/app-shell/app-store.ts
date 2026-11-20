@@ -18,9 +18,6 @@ interface AppState {
 }
 
 declare global {
-  interface ImportMeta {
-    readonly env?: { readonly DEV?: boolean };
-  }
   interface Window {
     __STORYBOOK_APP_STORE__?: typeof useAppStore;
   }

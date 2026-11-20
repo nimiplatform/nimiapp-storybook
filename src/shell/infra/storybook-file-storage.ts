@@ -21,7 +21,7 @@ export function createStorybookFileBackend(): StorybookFileBackend {
     },
     async write(relativePath, value) {
       // Kit's chunked file API handles narrative records beyond the small
-      // storage.writeJson document limit. Commit is owned by the native carrier.
+      // storage.writeJson document limit. Commit is owned by the connected Runtime.
       await assets.write({ relativePath, body: new Blob([JSON.stringify(value)], { type: 'application/json' }), mediaType: 'application/json', overwrite: true });
     },
     async remove(relativePath) { await assets.remove(relativePath); },

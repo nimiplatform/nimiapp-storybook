@@ -1,3 +1,4 @@
+import { captureStorybookWriteScope } from '../store/native-repository.js';
 import { projectEditor } from '../store/content-editors.js';
 import type { StoredProjectRecord } from '../store/storybook-store.js';
 import { admitFoundation, approveBible, admitChapter } from '../engine/index.js';
@@ -14,8 +15,11 @@ function withRuns(current: StoredProjectRecord, runs: GenerationRun[]): StoredPr
 // @nimi-authority: rule.storybook.ia.r007
 export function generateProjectFoundation(projectId: string): Promise<void> {
   const editor = projectEditor(projectId);
+  const assertCurrent = captureStorybookWriteScope();
   return editor.run('foundation', async () => {
+    assertCurrent();
     await editor.flush();
+    assertCurrent();
     const current = required(editor.getSnapshot().value);
     if (current.truthPackage.chapters.length) throw new Error('已有章节请使用修订入口。');
     const outcome = await runStoryFoundation({ projectId,
@@ -23,6 +27,7 @@ export function generateProjectFoundation(projectId: string): Promise<void> {
       direction: current.sourceDraft?.direction || '忠于原文',
       preferences: current.memory.feedbackPatches.filter(p => p.kind === 'preference').map(p => p.note),
     });
+    assertCurrent();
     const run: GenerationRun = outcome.ok ? { ...outcome.run, result: { kind: 'story-foundation', value: outcome.value } } : outcome.run;
     await editor.update(value => {
       const latest = required(value); const next = withRuns(latest, [run]);
@@ -36,15 +41,18 @@ export function generateProjectFoundation(projectId: string): Promise<void> {
   });
 }
 
-async function composeChapter(projectId: string, revise: boolean): Promise<void> {
+async function composeChapter(projectId: string, revise: boolean, assertCurrent: () => void): Promise<void> {
+  assertCurrent();
   const editor = projectEditor(projectId);
   await editor.flush();
+  assertCurrent();
   const current = required(editor.getSnapshot().value);
   editor.setPhase(revise ? 'continuity' : 'writing');
   const preferences = current.memory.feedbackPatches.filter(p => p.kind === 'preference').map(p => p.note);
   const outcome = revise
     ? await runChapterRevision(current.truthPackage, current.sourceDraft?.text, current.revisionNote, preferences)
     : await runStoryChapter(current.truthPackage, current.sourceDraft?.text, phase => editor.setPhase(phase), preferences);
+  assertCurrent();
   const runs = outcome.runs.map(run => outcome.ok && run.id === outcome.run.id ? { ...run, result: { kind: 'story-chapter' as const, value: outcome.value } } : run);
   await editor.update(value => {
     const latest = required(value); const next = withRuns(latest, runs);
@@ -62,12 +70,16 @@ async function composeChapter(projectId: string, revise: boolean): Promise<void>
 }
 export function generateProjectChapter(projectId: string, revise = false): Promise<void> {
   const editor = projectEditor(projectId);
-  return editor.run('chapter', () => composeChapter(projectId, revise));
+  const assertCurrent = captureStorybookWriteScope();
+  return editor.run('chapter', () => composeChapter(projectId, revise, assertCurrent));
 }
 export function approveProjectAndGenerate(projectId: string): Promise<void> {
   const editor = projectEditor(projectId);
+  const assertCurrent = captureStorybookWriteScope();
   return editor.run('chapter', async () => {
+    assertCurrent();
     await editor.flush();
+    assertCurrent();
     await editor.update(value => {
       const current = required(value);
       if (!current.foundationDraft) throw new Error('请先生成并确认故事设定。');
@@ -78,6 +90,6 @@ export function approveProjectAndGenerate(projectId: string): Promise<void> {
       if (!approved.ok) throw new Error(approved.message);
       return { ...current, truthPackage: approved.value, foundationDraft: undefined, project: { ...current.project, name: draft.title, updatedAt: now() } };
     });
-    await composeChapter(projectId, false);
+    await composeChapter(projectId, false, assertCurrent);
   });
 }

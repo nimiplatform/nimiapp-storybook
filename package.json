@@ -1,6 +1,6 @@
 {
   "name": "nimiapp-storybook",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.34.7",
@@ -31,8 +31,12 @@
     "spec:authority:check": "nimicoding authority check .nimi/spec",
     "spec:authority:compile": "nimicoding authority compile .nimi/spec",
     "sync": "nimi-app sync",
-    "postinstall": "install-electron",
-    "build:electron:production": "node scripts/clean-electron-production.mjs && pnpm run build && node scripts/package-electron-production.mjs"
+    "postinstall": "install-electron --no",
+    "build:electron:production": "node scripts/clean-electron-production.mjs && pnpm run build && node scripts/package-electron-production.mjs",
+    "dev:web": "nimi-app dev --platform web",
+    "dev:web-renderer": "vite --config vite.web.config.ts --mode web",
+    "build:web": "pnpm run typecheck:renderer && vite build --config vite.web.config.ts",
+    "build:web:release": "pnpm run typecheck:renderer && vite build --config vite.web.config.ts --mode web-release"
   },
   "dependencies": {
     "i18next": "^26.4.2",
@@ -43,8 +47,8 @@
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
     "zustand": "^5.0.13",
-    "@nimiplatform/sdk": "^0.22.2",
-    "@nimiplatform/kit": "^0.22.1"
+    "@nimiplatform/sdk": "^0.24.0-rc.10",
+    "@nimiplatform/kit": "^0.24.0-rc.16"
   },
   "devDependencies": {
     "@electron/packager": "^20.3.0",
@@ -54,15 +58,15 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.1.2",
-    "electron": "^44.5.1",
+    "electron": "^45.4.1",
     "esbuild": "^0.28.0",
     "eslint": "^10.4.0",
     "globals": "^17.6.0",
     "tailwindcss": "^4.3.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.59.4",
-    "vite": "^8.3.3",
-    "@nimiplatform/app-tools": "^0.14.0",
+    "vite": "^8.3.8",
+    "@nimiplatform/app-tools": "^0.16.0-rc.10",
     "@nimiplatform/nimi-coding": "0.7.0"
   },
   "author": "Nimi Team",

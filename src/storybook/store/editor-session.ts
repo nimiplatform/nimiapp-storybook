@@ -1,8 +1,10 @@
+import { captureStorybookIdentity, captureStorybookWriteScope } from './native-repository.js';
+
 export type EditorOperation = { kind: string; startedAt: number; phase?: string; blockNavigation: boolean };
 export type EditorSnapshot<T> = { value: T; status: 'saved' | 'saving' | 'error'; error?: string; notice?: string; operation?: EditorOperation };
 
 // @nimi-authority: rule.storybook.protocol.r007
-export function createEditorSession<T>(initial: T, persist: (value: T) => Promise<void>) {
+export function createEditorSession<T>(initial: T, persist: (value: T) => Promise<void>, bindPersist = () => persist) {
   let snapshot: EditorSnapshot<T> = { value: initial, status: 'saved' };
   let revision = 0;
   let committed = 0;
@@ -13,13 +15,19 @@ export function createEditorSession<T>(initial: T, persist: (value: T) => Promis
   const save = () => {
     const version = revision;
     const value = structuredClone(snapshot.value);
+    let write: typeof persist;
+    try { write = bindPersist(); }
+    catch (error) {
+      emit({ ...snapshot, status: 'error', error: error instanceof Error ? error.message : '保存未完成。' });
+      return Promise.reject(error);
+    }
     emit({ ...snapshot, status: 'saving', error: undefined });
-    const job = tail.catch(() => undefined).then(() => persist(value));
+    const job = tail.catch(() => undefined).then(() => write(value));
     tail = job.then(() => {
       committed = version;
       if (revision === version) emit({ ...snapshot, status: 'saved', error: undefined });
     }, error => {
-      if (revision === version) emit({ ...snapshot, status: 'error', error: error instanceof Error ? error.message : '本机保存失败。' });
+      if (revision === version) emit({ ...snapshot, status: 'error', error: error instanceof Error ? error.message : '内容保存失败。' });
       throw error;
     });
     // A failed background save is visible in the snapshot and retryable by flush.
@@ -60,12 +68,17 @@ export function createEditorSession<T>(initial: T, persist: (value: T) => Promis
 }
 
 export type EditorSession<T> = ReturnType<typeof createEditorSession<T>>;
-const sessions = new Map<string, EditorSession<unknown>>();
+let sessions = new Map<string, EditorSession<unknown>>();
+export function resetStorybookEditors() { sessions = new Map(); }
 // The logical content owns its session, including while every view is unmounted.
 export function sharedEditorSession<T>(key: string, initial: () => T, persist: (value: T) => Promise<void>): EditorSession<T> {
   const existing = sessions.get(key);
   if (existing) return existing as EditorSession<T>;
-  const session = createEditorSession(initial(), persist);
+  const assertIdentity = captureStorybookIdentity();
+  const session = createEditorSession(initial(), persist, () => {
+    assertIdentity(); const assertConnection = captureStorybookWriteScope(); assertConnection();
+    return async value => { assertIdentity(); assertConnection(); await persist(value); assertIdentity(); };
+  });
   sessions.set(key, session as EditorSession<unknown>);
   return session;
 }

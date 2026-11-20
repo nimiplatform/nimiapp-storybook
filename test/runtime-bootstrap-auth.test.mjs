@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import {
@@ -28,7 +28,7 @@ const PACKAGE = JSON.parse(read('package.json'));
 const MANIFEST = read('nimi.app.yaml');
 const ELECTRON_MAIN = read('src-electron/main.ts');
 const ELECTRON_PRELOAD = read('src-electron/preload.cts');
-const BOOTSTRAP_SOURCE = read('src/shell/infra/storybook-bootstrap.ts');
+const BOOTSTRAP_SOURCE = read('src/shell/mount-storybook.tsx');
 const CLIENT_SOURCE = read('src/shell/infra/storybook-nimi-client.ts');
 const AUTH_GATE_SOURCE = read('src/shell/app-shell/auth-provider.tsx');
 const RUNTIME_PLATFORM_SOURCE = read('src/shell/auth/runtime-platform.ts');
@@ -56,17 +56,12 @@ test('official development path is Desktop-supervised Electron with no app-owned
   assert.doesNotMatch(ELECTRON_MAIN, /remote-debugging|CDP|cdp/i);
 });
 
-test('bootstrap consumes only public local-app session posture', () => {
-  assert.match(CLIENT_SOURCE, /createNimiLocalAppStandardShellSurface/);
-  assert.match(CLIENT_SOURCE, /createNimiClient\(\{\s*localApp:/);
-  assert.match(BOOTSTRAP_SOURCE, /getStorybookNimiClient\(\)\.auth\.status\(\)/);
-  assert.match(BOOTSTRAP_SOURCE, /session\.sessionBound/);
-  assert.match(AUTH_GATE_SOURCE, /Desktop-supervised standard bridge/);
-  assert.match(AUTH_GATE_SOURCE, /不提供独立的登录或授权入口/);
-  assert.match(RUNTIME_PLATFORM_SOURCE, /desktop-supervised-local-app/);
-  assert.equal(existsSync(path.join(APP_ROOT, 'src/shell/infra/storybook-runtime-session.ts')), false);
-  assert.equal(existsSync(path.join(APP_ROOT, 'src/shell/features/auth/storybook-auth-adapter.ts')), false);
-  assert.equal(existsSync(path.join(APP_ROOT, 'src/shell/features/auth/storybook-login-page.tsx')), false);
+test('platform entries delegate identity and connection to the installed Kit', () => {
+  assert.match(read('src/main.tsx'), /createDesktopNimiAppSession/);
+  assert.match(read('src/main.web.tsx'), /createWebNimiAppSession/);
+  assert.doesNotMatch(CLIENT_SOURCE, /createNimiClient|auth\.status|fetch\(/);
+  assert.match(BOOTSTRAP_SOURCE, /NimiAppAccessGate/);
+  assert.doesNotMatch(ALL_ACTIVE_SOURCE, /prepareRuntimeClientLogin|completeRuntimeClientLogin/);
 });
 
 test('active source contains no app registration, credential custody, self-authorization, or account broker', () => {
@@ -86,7 +81,7 @@ test('active source contains no app registration, credential custody, self-autho
 
 test('authenticated Storybook uses the admitted protected text and AIConfig carrier only', () => {
   assert.match(RUNTIME_PLATFORM_SOURCE, /status: 'ready'/);
-  assert.match(RUNTIME_PLATFORM_SOURCE, /getStorybookNimiClient\(\)/);
+  assert.match(RUNTIME_PLATFORM_SOURCE, /state.runtime.scope.client/);
   assert.match(RUNTIME_AI_SOURCE, /client\.ai\.scenario\.execute/);
   assert.match(RUNTIME_AI_SOURCE, /loadStorybookAIConfig\(client\.aiConfig\)/);
   assert.doesNotMatch(RUNTIME_AI_SOURCE, /client\.runtime|client\.features|createNimiRuntimeAIModel/);
@@ -98,9 +93,8 @@ test('Storybook resolves portable capability intent without app-owned binding cu
   assert.doesNotMatch(RUNTIME_AI_SOURCE, /connectorId|connectorGrantId|profileBindingId|providerModelId/);
 });
 
-test('session loss remains recoverable through same-host bootstrap retry', () => {
+test('session loss offers the shared connection action without exiting the app', () => {
   assert.doesNotMatch(ELECTRON_MAIN, /onProtectedSessionFailure/);
-  assert.match(AUTH_GATE_SOURCE, /runStorybookBootstrap\(\{ force: true \}\)/);
-  assert.match(AUTH_GATE_SOURCE, /重新检查/);
+  assert.match(AUTH_GATE_SOURCE, /session.connectRuntime\(\)/);
   assert.doesNotMatch(BOOTSTRAP_SOURCE, /app\.quit|window\.close/);
 });

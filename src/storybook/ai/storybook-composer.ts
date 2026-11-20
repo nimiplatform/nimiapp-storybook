@@ -1,4 +1,4 @@
-import { getRuntimePlatformProjection } from '../../shell/auth/runtime-platform.js';
+import { getRuntimePlatformProjection, type StorybookRuntimePlatformProjection } from '../../shell/auth/runtime-platform.js';
 import { mintId } from '../engine/ids.js';
 import {
   parseFoundationDraft,
@@ -28,7 +28,7 @@ async function compose<T>(input: {
   directive: string;
   context?: string[];
   parse: (text: string) => { ok: true; value: T } | { ok: false; message: string };
-}): Promise<GenerationOutcome<T>> {
+}, projection: StorybookRuntimePlatformProjection): Promise<GenerationOutcome<T>> {
   const run: GenerationRun = {
     id: mintId('genrun'),
     projectId: input.projectId,
@@ -48,7 +48,6 @@ async function compose<T>(input: {
     },
   });
   try {
-    const projection = await getRuntimePlatformProjection();
     if (projection.status !== 'ready')
       return unavailable(
         '连接 Nimi 后，AI 就可以和你一起编排故事。原文已经保存。',
@@ -100,7 +99,7 @@ async function compose<T>(input: {
   }
 }
 
-export function runStoryFoundation(input: {
+export async function runStoryFoundation(input: {
   projectId: string;
   source: string;
   direction: string;
@@ -116,7 +115,7 @@ export function runStoryFoundation(input: {
     }),
     directive: FOUNDATION_DIRECTIVE,
     parse: parseFoundationDraft,
-  });
+  }, await getRuntimePlatformProjection());
 }
 
 type ChapterOutcome = GenerationOutcome<ChapterDraft> & { runs: GenerationRun[] };
@@ -144,6 +143,7 @@ const CONTINUITY_DIRECTIVE = `${CHAPTER_DIRECTIVE}
 重点：一次性道具或资源使用后不能再次使用；角色在获知秘密前不能表现得已经知道；时间、人物关系、物品归属必须一致；每个选项的前置条件在该路径中必须仍然成立；选择的后果必须明确兑现。除非已确认的世界规则允许，否则不能凭空恢复资源、逆转已发生事件或改写已知人物关系。保留原文的核心事实、约束和情感线索，不能为了让分支闭合而改掉原文规则。节点可能从不同前置路径抵达，必须对所有路径成立；必要时拆成两个不同节点。删去因此不可达的节点，保留至少两个不同且完整的结局。仍须满足短篇节点数量与 JSON 格式要求。只返回修订后的作品，不输出检查报告。`;
 
 async function reviewChapter(
+  projection: StorybookRuntimePlatformProjection,
   pkg: StorybookTruthPackage,
   draft: ChapterDraft,
   sourceText?: string,
@@ -166,7 +166,7 @@ async function reviewChapter(
     context: sourceText ? [JSON.stringify({ sourceText })] : undefined,
     directive: CONTINUITY_DIRECTIVE,
     parse: parseChapterDraft,
-  });
+  }, projection);
 }
 
 export async function runStoryChapter(
@@ -178,6 +178,7 @@ export async function runStoryChapter(
   if (!pkg.bible?.approved || pkg.adaptationBrief?.approval !== 'approved')
     return rejectedChapter(pkg, '请先确认故事设定与改编方向。');
   if (pkg.chapters.length) return rejectedChapter(pkg, '已有章节请使用修订入口。');
+  const projection = await getRuntimePlatformProjection();
   onPhase?.('writing');
   const written = await compose({
     projectId: pkg.projectId,
@@ -192,10 +193,10 @@ export async function runStoryChapter(
     context: sourceText ? [JSON.stringify({ sourceText })] : undefined,
     directive: CHAPTER_DIRECTIVE,
     parse: parseChapterDraft,
-  });
+  }, projection);
   if (!written.ok) return { ...written, runs: [written.run] };
   onPhase?.('continuity');
-  const reviewed = await reviewChapter(pkg, written.value, sourceText, undefined, preferences);
+  const reviewed = await reviewChapter(projection, pkg, written.value, sourceText, undefined, preferences);
   return { ...reviewed, runs: [written.run, reviewed.run] };
 }
 
@@ -217,6 +218,6 @@ export async function runChapterRevision(
     variables: pkg.stateEndingMatrix?.variables ?? [],
     endings: (pkg.stateEndingMatrix?.endings ?? []).map(({ id, label }) => ({ id, label })),
   };
-  const result = await reviewChapter(pkg, draft, sourceText, revisionInstruction, preferences);
+  const result = await reviewChapter(await getRuntimePlatformProjection(), pkg, draft, sourceText, revisionInstruction, preferences);
   return { ...result, runs: [result.run] };
 }

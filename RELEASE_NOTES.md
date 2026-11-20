@@ -1,3 +1,7 @@
+## 0.1.10 · Hosted Web & published 0.24 RC carrier
+
+Adopts published npm `@nimiplatform/app-tools` `0.16.0-rc.10`, `@nimiplatform/sdk` `0.24.0-rc.10`, and `@nimiplatform/kit` `0.24.0-rc.16` with Desktop-supervised Electron and hosted Web (`storybook.nimi.xyz`) sharing one `nimi.storybook` product identity, Runtime App storage, and AIConfig surface.
+
 ## 0.1.8 · Published platform dependencies
 
 Uses public npm SDK 0.21.0, Kit/native 0.19.3, App Tools 0.12.1 and nimi-coding 0.6.5 with frozen registry lockfiles. Local Nimi tarball overrides are removed; Desktop-supervised development and installed Apps use the same published carrier.

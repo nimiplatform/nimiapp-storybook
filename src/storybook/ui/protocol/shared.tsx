@@ -1,8 +1,10 @@
+import { captureStorybookIdentity } from '../../store/native-repository.js';
 import type { ContentPart, ImportedDocument, StorybookWork } from '../../engine/protocol/types.js';
 import { cardArtwork, outputParts, substitute, type ExperienceRun } from '../../engine/protocol/session.js';
 import { safeMediaUri, validateWork } from '../../engine/protocol/validate.js';
 
 import { portableWork } from '../../../shell/infra/storybook-media-storage.js';
+import { deliverStorybookJson } from '../../../shell/infra/storybook-file-delivery.js';
 import { NativeImage, NativePlayer } from './native-media.js';
 import { Prose } from './prose.js';
 export { Prose } from './prose.js';
@@ -17,10 +19,10 @@ export function artworkOf(document: ImportedDocument): string | undefined {
   return undefined;
 }
 export async function downloadJson(value: unknown, name: string) {
+  const assertIdentity = captureStorybookIdentity();
   if (value && typeof value === 'object' && 'format' in value && value.format === 'nimi.storybook' && !validateWork(value).some(i => i.level === 'error')) value = await portableWork(value as StorybookWork);
-  const url = URL.createObjectURL(new Blob([JSON.stringify(value, null, 2)], { type: 'application/json' }));
-  const a = document.createElement('a'); a.href = url; a.download = name.replace(/[\\/:*?"<>|]/g, '-') + '.json'; a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1500);
+  assertIdentity();
+  await deliverStorybookJson(value, `${name}.json`, assertIdentity);
 }
 
 // @nimi-authority: rule.storybook.protocol.r006

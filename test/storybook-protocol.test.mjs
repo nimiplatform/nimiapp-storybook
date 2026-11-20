@@ -268,7 +268,7 @@ test('an unavailable native store does not create an empty or memory-only produc
   const cold = await import(pathToFileURL(`${out}/src/storybook/store/native-repository.js`).href + '?unavailable');
   await assert.rejects(cold.initializeStorybookStore({ async list() { throw new Error('native host unavailable'); } }), /native host unavailable/);
   assert.equal(cold.isStorybookStoreReady(), false);
-  assert.throws(() => cold.allRecords('documents'), /本机内容库尚未打开/);
+  assert.throws(() => cold.allRecords('documents'), /内容库尚未打开/);
 });
 
 test('editor working copies merge immediate edits and preserve input after a real file write failure', async () => {
