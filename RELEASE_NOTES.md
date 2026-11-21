@@ -1,6 +1,8 @@
-## 0.1.10 · Hosted Web & published 0.24 RC carrier
+## 0.1.10 · Storefront 展示资料、0.24 RC 载体与 Hosted Web 基线
 
-Adopts published npm `@nimiplatform/app-tools` `0.16.0-rc.10`, `@nimiplatform/sdk` `0.24.0-rc.10`, and `@nimiplatform/kit` `0.24.0-rc.16` with Desktop-supervised Electron and hosted Web (`storybook.nimi.xyz`) sharing one `nimi.storybook` product identity, Runtime App storage, and AIConfig surface.
+- 同步原生端与托管 Web 端（`0.1.10`，`storybook.nimi.xyz`）产品基线，升级至公开 `@nimiplatform/app-tools` `0.16.0-rc.12`，沿用 `@nimiplatform/sdk` `0.24.0-rc.10` 与 `@nimiplatform/kit` `0.24.0-rc.16`，共享统一的 `nimi.storybook` 身份、主 PC Runtime 应用私有存储与 AIConfig 配置面。
+- 补全 Nimi App Storefront 双语展示资料：归入「伙伴与世界（Companions & Worlds）」分类，提供中英双语使用指南、标签、核心亮点、16:9 封面及真实产品界面画廊（发现书架、沉浸式分支阅读、故事线分叉回溯、角色卡与作品导入、创作间 Studio 与作品编排）。
+- 展示图片通过独立的聚合媒体包分发，不增加原生 `.nimiapp` 安装包体积。
 
 ## 0.1.8 · Published platform dependencies
 

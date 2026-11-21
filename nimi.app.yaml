@@ -23,6 +23,85 @@ metadata:
   author: Nimi Team
   homepage_url: https://github.com/nimiplatform/nimiapp-storybook
   support_url: https://github.com/nimiplatform/nimiapp-storybook/issues
+  storefront:
+    category: companions-worlds
+    default_locale: zh
+    locales:
+      zh:
+        tags:
+          - 互动故事
+          - 分支叙事
+          - 角色卡 V2
+          - 创作工作台
+          - 本地私有
+        highlights:
+          - title: 分支阅读与即兴对话
+            description: 内置《雾港来信》《末班车没有终点》《雨天营业的信件店》三部原创短篇，可按选项推进结局，也能随时展开 AI 即兴对话。
+          - title: 开放导入角色与世界
+            description: 支持导入 Character Card V2（JSON / PNG）、Storybook 作品与 Lorebook（单文件上限 8 MiB），保留原始字段并支持直接开聊。
+          - title: 创作间 Studio
+            description: 支持从零编排独立体验作品与实时校验 JSON，或将短篇文本经 AI 设定提案、人工确认与分支试玩转化为可游玩故事。
+          - title: 故事线分叉与私有存档
+            description: 随时回看故事线并从任意节点分叉重走另一条路；草稿、进度与对话保存在主 PC 的 Nimi 应用私有存储中，不混入外部记忆。
+      en:
+        display_name: Storybook
+        summary: Read and create interactive stories where characters, choices, and narrative move together.
+        introduction: NIMI_APP.en.md
+        tags:
+          - Interactive Fiction
+          - Branching Stories
+          - Character Card V2
+          - Story Studio
+          - Private Storage
+        highlights:
+          - title: Branching Play & AI Improv
+            description: Play three built-in original stories with multiple endings, or open free-text AI dialogue to question characters in-scene while keeping story choices intact.
+          - title: Character Card V2 & Lorebooks
+            description: Import Character Card V2 (JSON/PNG), Storybook works, and Lorebooks up to 8 MiB with original fields preserved for open-ended or structured play.
+          - title: Creator Studio Workbench
+            description: Author portable Storybook works with a guided form and live-validated JSON editor, or adapt narrative text into branching chapters with AI foundation review.
+          - title: Timeline Forking & Private Storage
+            description: Rewind to any checkpoint to explore alternate paths; drafts, saves, and transcripts stay in your primary PC's Nimi App private storage.
+    media:
+      cover:
+        path: assets/storefront/cover.webp
+      gallery:
+        - id: play-shelf
+          kind: image
+          path: assets/storefront/play-shelf.webp
+          caption:
+            zh: 发现故事书架：快速续读未完旅程，按题材浏览三部内置原创多结局故事
+            en: "Story shelf: resume active journeys and browse three built-in original multi-ending stories by genre"
+        - id: play-reading
+          kind: image
+          path: assets/storefront/play-reading.webp
+          caption:
+            zh: 沉浸式分支阅读：左侧显示角色身份与影响状态，正文下方提供情境抉择与 AI 即兴对话入口
+            en: "Immersive branching reader: story card and tracked variables alongside prose, contextual choices, and AI improv"
+        - id: storyline-fork
+          kind: image
+          path: assets/storefront/storyline-fork.webp
+          caption:
+            zh: 我的故事线：回溯每个关键选择节点，随时从历史岔路分叉开启另一条路线
+            en: "My Storyline: revisit past checkpoints and fork onto alternate routes while preserving earlier runs"
+        - id: content-import
+          kind: image
+          path: assets/storefront/content-import.webp
+          caption:
+            zh: 开放内容导入：拖入或粘贴 Character Card V2（JSON / PNG）、Storybook 作品与 Lorebook（单文件上限 8 MiB）
+            en: "Open content import: drop or paste Character Card V2 (JSON/PNG), Storybook works, and Lorebooks up to 8 MiB"
+        - id: studio-home
+          kind: image
+          path: assets/storefront/studio-home.webp
+          caption:
+            zh: 创作间 Studio：提供新建体验作品与从叙事文本改编双入口，集中管理草稿与创作项目
+            en: "Creator Studio: start a portable experience work or adapt narrative text into a playable branching story"
+        - id: studio-editor
+          kind: image
+          path: assets/storefront/studio-editor.webp
+          caption:
+            zh: 体验作品编排器：左侧可视化填写角色位与创作意图，右侧同步编辑并实时校验 Storybook JSON 定义
+            en: "Experience Work Editor: pair guided authoring fields and role slots with a live-validated Storybook JSON editor"
 capability_contract_refs:
   - text.generate
 required_standardized_feature_refs: []

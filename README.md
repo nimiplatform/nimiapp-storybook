@@ -1,7 +1,7 @@
 ## Current platform baseline (0.1.10)
 
 Storybook (`nimi.storybook`, public slug `storybook`) consumes published npm packages without local tarball overrides:
-- `@nimiplatform/app-tools` `^0.16.0-rc.10`
+- `@nimiplatform/app-tools` `^0.16.0-rc.12`
 - `@nimiplatform/sdk` `^0.24.0-rc.10`
 - `@nimiplatform/kit` `^0.24.0-rc.16` (with matching optional native binding)
 - `@nimiplatform/nimi-coding` `0.7.0`, `electron` `^45.4.1`, `vite` `^8.3.8`
