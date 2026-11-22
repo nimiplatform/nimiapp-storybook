@@ -2,7 +2,7 @@ schema_version: 1
 app_id: nimi.storybook
 public_slug: storybook
 display_name: Storybook
-version: 0.1.10
+version: 0.1.11
 profile: standalone
 manifest_role: submitted-input
 app_access:
