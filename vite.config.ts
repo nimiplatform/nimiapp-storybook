@@ -83,6 +83,8 @@ export default defineConfig({
   },
 
   build: {
+    outDir: 'dist/renderer',
+    emptyOutDir: true,
     chunkSizeWarningLimit: 1600,
     rollupOptions: {
       output: {

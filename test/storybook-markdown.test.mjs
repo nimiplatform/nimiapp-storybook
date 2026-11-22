@@ -12,7 +12,7 @@ const root = path.resolve(import.meta.dirname, '..');
 mkdirSync(path.join(root, '.nimi/local'), { recursive: true });
 const out = mkdtempSync(path.join(root, '.nimi/local/markdown-tests-'));
 await build({ entryPoints: [path.join(root, 'src/storybook/ui/protocol/prose.tsx')], outfile: path.join(out, 'prose.mjs'), bundle: true, platform: 'node', format: 'esm', packages: 'external', jsx: 'automatic', logLevel: 'silent' });
-const { Prose } = await import(pathToFileURL(path.join(out, 'prose.mjs')).href);
+const { Prose, configureStorybookExternalLinkProtocols } = await import(pathToFileURL(path.join(out, 'prose.mjs')).href);
 // Static formatting only: no identity or Runtime success is supplied.
 const snapshot = { identity: { status: 'signed-out' }, runtime: { status: 'disconnected' } };
 const session = { getSnapshot: () => snapshot, subscribe: () => () => {} };
@@ -45,7 +45,17 @@ test('Markdown supports lists, quotes and GFM tables without rewriting source te
 });
 
 test('unsupported external schemes and credential-bearing links remain plain text', () => {
-  const html = render('[email](mailto:a@example.org) [credentials](https://name:secret@example.org) [local](file:///tmp/a) [web](https://example.org)');
-  assert.equal((html.match(/<a /g) ?? []).length, 1);
+  const html = render('[email](mailto:a@example.org) [credentials](https://name:secret@example.org) [local](file:///tmp/a) [web](https://example.org) [plain](http://example.org)');
+  assert.equal((html.match(/<a /g) ?? []).length, 2);
   assert.doesNotMatch(html, /href="mailto:|href="file:|href="https:\/\/name:/);
+
+  configureStorybookExternalLinkProtocols(['https:']);
+  try {
+    const desktopHtml = render('[https](https://example.org) [http](http://example.org)');
+    assert.equal((desktopHtml.match(/<a /g) ?? []).length, 1);
+    assert.match(desktopHtml, /href="https:\/\/example\.org\/?"/);
+    assert.doesNotMatch(desktopHtml, /href="http:/);
+  } finally {
+    configureStorybookExternalLinkProtocols(['https:', 'http:']);
+  }
 });

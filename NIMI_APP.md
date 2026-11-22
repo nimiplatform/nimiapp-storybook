@@ -50,5 +50,6 @@
 ## 当前限制与获取帮助
 
 - **阶段与界面语言**：Storybook 处于 Pre-Alpha 阶段；当前应用内界面语言为简体中文（商店介绍与使用指南提供中英双语）。
+- **外部链接边界**：桌面受管容器仅在系统默认浏览器中打开安全的 `https://` 外部网页链接，正文中的明文 `http://` 地址会降级为纯文本展示。
 - **断线与未保存编辑**：连接断开后可继续阅读当前页面已打开的内容，但保存、导入和 AI 生成需要重新建立连接。未保存编辑仅停留在当前页面，退出账号或关闭标签页可能丢失，请及时保存；重新连接后不会自动重发中断的 AI 请求。
 - **源码与问题反馈**：访问 [Storybook 开源仓库](https://github.com/nimiplatform/nimiapp-storybook) 或前往 [GitHub Issues 反馈问题](https://github.com/nimiplatform/nimiapp-storybook/issues)。

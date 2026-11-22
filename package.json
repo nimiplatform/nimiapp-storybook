@@ -12,14 +12,10 @@
     "dev": "nimi-app dev --shell electron",
     "dev:renderer": "vite --host 127.0.0.1 --port 1473 --strictPort",
     "dev:shell": "nimi-app dev",
-    "dev:electron": "nimi-app dev --shell electron",
     "build:renderer": "vite build",
-    "build:electron": "tsc -p tsconfig.electron.json && node scripts/bundle-electron-preload.mjs",
     "typecheck:renderer": "tsc --noEmit",
-    "typecheck:electron": "tsc -p tsconfig.electron.json --noEmit",
-    "typecheck": "pnpm run typecheck:renderer && pnpm run typecheck:electron",
-    "build": "pnpm run typecheck && pnpm run build:renderer && pnpm run build:electron",
-    "build:shell": "pnpm run build:electron",
+    "typecheck": "pnpm run typecheck:renderer",
+    "build": "pnpm run typecheck && pnpm run build:renderer",
     "lint": "pnpm run typecheck && eslint . --max-warnings 0",
     "test": "node --test test/*.test.mjs",
     "check": "pnpm run typecheck && pnpm run test && pnpm run lint",
@@ -31,8 +27,6 @@
     "spec:authority:check": "nimicoding authority check .nimi/spec",
     "spec:authority:compile": "nimicoding authority compile .nimi/spec",
     "sync": "nimi-app sync",
-    "postinstall": "install-electron --no",
-    "build:electron:production": "node scripts/clean-electron-production.mjs && pnpm run build && node scripts/package-electron-production.mjs",
     "dev:web": "nimi-app dev --platform web",
     "dev:web-renderer": "vite --config vite.web.config.ts --mode web",
     "build:web": "pnpm run typecheck:renderer && vite build --config vite.web.config.ts",
@@ -51,14 +45,12 @@
     "@nimiplatform/kit": "^0.24.0-rc.16"
   },
   "devDependencies": {
-    "@electron/packager": "^20.3.0",
     "@eslint/js": "^10.0.1",
     "@tailwindcss/vite": "^4.3.0",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.1.2",
-    "electron": "^45.4.1",
     "esbuild": "^0.28.0",
     "eslint": "^10.4.0",
     "globals": "^17.6.0",
@@ -66,10 +58,9 @@
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.59.4",
     "vite": "^8.3.8",
-    "@nimiplatform/app-tools": "^0.16.0-rc.12",
+    "@nimiplatform/app-tools": "^0.16.0-rc.13",
     "@nimiplatform/nimi-coding": "0.7.0"
   },
   "author": "Nimi Team",
-  "license": "Apache-2.0",
-  "main": "dist-electron/main.js"
+  "license": "Apache-2.0"
 }

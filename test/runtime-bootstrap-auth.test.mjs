@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import {
@@ -26,38 +26,40 @@ function sourceText(relativeRoot) {
 
 const PACKAGE = JSON.parse(read('package.json'));
 const MANIFEST = read('nimi.app.yaml');
-const ELECTRON_MAIN = read('src-electron/main.ts');
-const ELECTRON_PRELOAD = read('src-electron/preload.cts');
+const BUILD_PROFILE = read('.nimi/config/build-profile.yaml');
 const BOOTSTRAP_SOURCE = read('src/shell/mount-storybook.tsx');
 const CLIENT_SOURCE = read('src/shell/infra/storybook-nimi-client.ts');
 const AUTH_GATE_SOURCE = read('src/shell/app-shell/auth-provider.tsx');
 const RUNTIME_PLATFORM_SOURCE = read('src/shell/auth/runtime-platform.ts');
 const RUNTIME_AI_SOURCE = read('src/storybook/ai/storybook-runtime-invokers.ts');
-const ALL_ACTIVE_SOURCE = `${sourceText('src')}\n${sourceText('src-electron')}`;
+const ALL_ACTIVE_SOURCE = sourceText('src');
 
-test('Storybook uses one canonical app id across manifest and supervised Electron host', () => {
+test('Storybook uses one canonical app id across manifest and managed-web carrier', () => {
   assert.equal(STORYBOOK_APP_ID, 'nimi.storybook');
   assert.equal(STORYBOOK_RUNTIME_APP_ID, STORYBOOK_APP_ID);
   assert.match(MANIFEST, /^app_id: nimi\.storybook$/m);
-  assert.match(ELECTRON_MAIN, /const STORYBOOK_APP_ID = 'nimi\.storybook'/);
+  assert.equal(existsSync(path.join(APP_ROOT, 'src-electron')), false);
+  assert.match(BUILD_PROFILE, /^build_profile_ref: managed-web-pnpm-vite$/m);
+  assert.match(BUILD_PROFILE, /^\s+desktop-universal:$/m);
+  assert.match(BUILD_PROFILE, /^\s+payload_path: dist\/renderer$/m);
 });
 
-test('official development path is Desktop-supervised Electron with no app-owned CDP', () => {
+test('official development path uses Desktop-supervised managed-web carrier with no app-owned Electron host', () => {
   assert.equal(PACKAGE.scripts.dev, 'nimi-app dev --shell electron');
   assert.equal(PACKAGE.scripts['dev:shell'], 'nimi-app dev');
-  assert.equal(PACKAGE.scripts['dev:electron'], 'nimi-app dev --shell electron');
+  assert.equal(PACKAGE.main, undefined);
+  assert.equal(PACKAGE.scripts.postinstall, undefined);
+  assert.equal(PACKAGE.devDependencies.electron, undefined);
   assert.match(MANIFEST, /^profile: standalone$/m);
   assert.match(MANIFEST, /^app_access:\s*\n  - runtime\.consume$/m);
   assert.doesNotMatch(MANIFEST, /^permissions:/m);
   assert.match(MANIFEST, /local_development:\s*\n  electron:\s*\n    renderer_origin: http:\/\/127\.0\.0\.1:1473/m);
-  assert.match(ELECTRON_MAIN, /registerNimiElectronAppBridge/);
-  assert.doesNotMatch(ELECTRON_MAIN, /onProtectedSessionFailure/);
-  assert.match(ELECTRON_PRELOAD, /installNimiElectronRuntimeBridge/);
-  assert.doesNotMatch(ELECTRON_MAIN, /remote-debugging|CDP|cdp/i);
+  assert.match(MANIFEST, /title_bar_style: native/);
 });
 
 test('platform entries delegate identity and connection to the installed Kit', () => {
   assert.match(read('src/main.tsx'), /createDesktopNimiAppSession/);
+  assert.match(read('src/main.tsx'), /configureStorybookExternalLinkProtocols\(\['https:'\]\)/);
   assert.match(read('src/main.web.tsx'), /createWebNimiAppSession/);
   assert.doesNotMatch(CLIENT_SOURCE, /createNimiClient|auth\.status|fetch\(/);
   assert.match(BOOTSTRAP_SOURCE, /NimiAppAccessGate/);
@@ -94,7 +96,6 @@ test('Storybook resolves portable capability intent without app-owned binding cu
 });
 
 test('session loss offers the shared connection action without exiting the app', () => {
-  assert.doesNotMatch(ELECTRON_MAIN, /onProtectedSessionFailure/);
   assert.match(AUTH_GATE_SOURCE, /session.connectRuntime\(\)/);
   assert.doesNotMatch(BOOTSTRAP_SOURCE, /app\.quit|window\.close/);
 });

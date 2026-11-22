@@ -50,5 +50,6 @@ Welcome to Storybook—an interactive narrative app that combines branching read
 ## Current Limitations & Help
 
 - **Pre-Alpha & In-App UI Language**: Storybook is in Pre-Alpha. The in-app interface is currently presented in Simplified Chinese, while storefront metadata and user documentation are provided in both Chinese and English.
+- **External Link Policy**: Inside the desktop managed carrier, only validated `https://` links open in your system browser; plaintext `http://` links in story prose render as plain text.
 - **Disconnects & Unsaved Edits**: If the connection drops, content already open on the page remains readable, while saving, importing, and AI generation require an active connection. Unsaved edits stay only on the current page and can be lost if you sign out or close the tab; reconnecting never auto-replays interrupted AI requests.
 - **Source & Support**: Visit the [Storybook repository](https://github.com/nimiplatform/nimiapp-storybook) or report issues on [GitHub Issues](https://github.com/nimiplatform/nimiapp-storybook/issues).

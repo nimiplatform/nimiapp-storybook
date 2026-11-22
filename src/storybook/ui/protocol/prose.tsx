@@ -3,12 +3,20 @@ import remarkGfm from 'remark-gfm';
 import { safeMediaUri } from '../../engine/protocol/validate.js';
 import { NativeImage } from './native-media.js';
 
+let allowedExternalLinkProtocols: readonly string[] = ['https:', 'http:'];
+
+export function configureStorybookExternalLinkProtocols(protocols: readonly string[]): void {
+  allowedExternalLinkProtocols = [...protocols];
+}
+
 const urlTransform: UrlTransform = (url, key) => {
   if (key === 'src') return safeMediaUri(url);
   if (/^#[\w-]+$/.test(url)) return url;
   try {
     const target = new URL(url);
-    return ['https:', 'http:'].includes(target.protocol) && target.hostname && !target.username && !target.password ? target.href : undefined;
+    return allowedExternalLinkProtocols.includes(target.protocol) && target.hostname && !target.username && !target.password
+      ? target.href
+      : undefined;
   } catch { return undefined; }
 };
 const components: Components = {
